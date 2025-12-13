@@ -29,7 +29,7 @@ export function CategoryPieChart({ transactions, currency }: CategoryPieChartPro
     }, [transactions]);
 
     return (
-        <Card>
+        <Card className="hover:shadow-md transition-shadow duration-200">
             <CardHeader>
                 <CardTitle>Spending by Category</CardTitle>
             </CardHeader>
@@ -42,20 +42,27 @@ export function CategoryPieChart({ transactions, currency }: CategoryPieChartPro
                                     data={data}
                                     cx="50%"
                                     cy="50%"
-                                    innerRadius={60}
-                                    outerRadius={80}
+                                    innerRadius={65}
+                                    outerRadius={85}
                                     paddingAngle={5}
                                     dataKey="value"
+                                    cornerRadius={4}
                                 >
                                     {data.map((entry, index) => (
-                                        <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                                        <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} stroke="transparent" />
                                     ))}
                                 </Pie>
                                 <Tooltip
                                     formatter={(value: number) => formatCurrency(value, currency)}
-                                    contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }}
+                                    contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)' }}
                                 />
-                                <Legend iconType="circle" wrapperStyle={{ fontSize: '12px' }} />
+                                <Legend
+                                    iconType="circle"
+                                    wrapperStyle={{
+                                        fontSize: '12px',
+                                        paddingTop: '20px'
+                                    }}
+                                />
                             </PieChart>
                         </ResponsiveContainer>
                     ) : (

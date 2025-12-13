@@ -24,7 +24,7 @@ export function AddAssetModal({ assetToEdit, open: controlledOpen, onOpenChange 
 
     return (
         <Dialog open={isOpen} onOpenChange={setOpen}>
-            {!assetToEdit && (
+            {!assetToEdit && controlledOpen === undefined && (
                 <DialogTrigger asChild>
                     <Button>
                         <Plus className="mr-2 h-4 w-4" /> Add Investment

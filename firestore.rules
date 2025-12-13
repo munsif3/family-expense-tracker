@@ -60,6 +60,10 @@ service cloud.firestore {
     match /recurring_transactions/{recurringId} {
         allow read, write: if isAuthenticated();
     }
+    
+    match /goals/{goalId} {
+        allow read, write: if isAuthenticated();
+    }
 
     // Default deny for anything else
     match /{document=**} {

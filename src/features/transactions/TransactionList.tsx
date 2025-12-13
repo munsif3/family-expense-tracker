@@ -84,7 +84,7 @@ export function TransactionList({ transactions, loading, compact }: TransactionL
                                 <div className="flex items-center justify-between w-full sm:w-auto gap-4">
                                     <div className={cn(
                                         "font-bold",
-                                        tx.type === 'income' ? "text-green-600" : "text-black dark:text-white"
+                                        tx.type === 'income' ? "text-green-600" : "text-red-600"
                                     )}>
                                         {tx.type === 'expense' ? '-' : '+'}{formatCurrency(tx.amount, tx.currency)}
                                     </div>

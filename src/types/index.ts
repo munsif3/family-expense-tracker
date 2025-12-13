@@ -55,6 +55,19 @@ export interface RecurringTransaction {
     createdAt: Timestamp;
 }
 
+export interface FinancialGoal {
+    id: string;
+    userId: string;
+    householdId: string;
+    name: string;
+    targetAmount: number;
+    currentAmount: number;
+    deadline?: Date;
+    color: string;
+    icon: string;
+    createdAt?: any;
+}
+
 export interface Attachment {
     id: string;
     url: string;

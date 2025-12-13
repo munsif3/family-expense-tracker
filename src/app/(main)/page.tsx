@@ -8,9 +8,6 @@ import { TrendChart } from '@/features/dashboard/TrendChart';
 import { Card, CardContent, CardTitle, CardHeader } from '@/components/ui/card';
 import { ArrowDownLeft, ArrowUpRight, Wallet, Loader2 } from 'lucide-react';
 import { formatCurrency } from '@/lib/utils';
-import { AddTransactionModal } from '@/features/transactions/AddTransactionModal';
-import { Button } from '@/components/ui/button';
-import { useState } from 'react';
 
 
 export default function DashboardPage() {
@@ -20,8 +17,6 @@ export default function DashboardPage() {
         currency,
         transactions
     } = useDashboard();
-
-    const [openAdd, setOpenAdd] = useState(false);
 
     if (loading) {
         return (
@@ -38,9 +33,6 @@ export default function DashboardPage() {
                     <h1 className="text-3xl font-bold tracking-tight">Dashboard</h1>
                     <p className="text-muted-foreground mt-1">Overview of your family finances</p>
                 </div>
-                <Button onClick={() => setOpenAdd(true)}>
-                    Add Transaction
-                </Button>
             </div>
 
             {/* Summary Cards */}
@@ -100,8 +92,6 @@ export default function DashboardPage() {
                 <CategoryPieChart transactions={transactions} currency={currency} />
                 <TrendChart transactions={transactions} currency={currency} />
             </div>
-
-            <AddTransactionModal open={openAdd} onOpenChange={setOpenAdd} />
         </div>
     );
 }

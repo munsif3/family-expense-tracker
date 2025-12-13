@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+// import { useState } from 'react'; -> Removed unused import
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -15,28 +15,14 @@ interface AddTransactionModalProps {
     onOpenChange?: (open: boolean) => void;
 }
 
-export function AddTransactionModal({ transactionToEdit, open: controlledOpen, onOpenChange }: AddTransactionModalProps) {
-    const [internalOpen, setInternalOpen] = useState(false);
-
-    // Use controlled state if provided, otherwise local
-    const isOpen = controlledOpen !== undefined ? controlledOpen : internalOpen;
-    const setOpen = onOpenChange || setInternalOpen;
-
-    const { form, loading, submitTransaction } = useAddTransaction(transactionToEdit, isOpen, setOpen);
+export function AddTransactionModal({ transactionToEdit, open, onOpenChange }: AddTransactionModalProps) {
+    const { form, loading, submitTransaction } = useAddTransaction(transactionToEdit, !!open, onOpenChange || (() => { }));
 
     const selectedType = form.watch('type');
     const filteredCategories = CATEGORIES.filter(c => c.type === selectedType);
 
     return (
-        <Dialog open={isOpen} onOpenChange={setOpen}>
-            {!transactionToEdit && (
-                <DialogTrigger asChild>
-                    <Button>
-                        <Plus className="mr-2 h-4 w-4" />
-                        Add Transaction
-                    </Button>
-                </DialogTrigger>
-            )}
+        <Dialog open={open} onOpenChange={onOpenChange}>
             <DialogContent className="sm:max-w-[425px]">
                 <DialogHeader>
                     <DialogTitle>{transactionToEdit ? 'Edit Transaction' : 'Add New Transaction'}</DialogTitle>
