@@ -35,12 +35,16 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         const authUnsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
             setUser(firebaseUser);
 
-            // Clean up previous listeners
+            // Clean up previous listeners to avoid memory leaks or state inconsistency
+            // when switching users.
             if (profileUnsubscribe) { profileUnsubscribe(); profileUnsubscribe = null; }
             if (householdUnsubscribe) { householdUnsubscribe(); householdUnsubscribe = null; }
 
             if (firebaseUser) {
                 const userRef = doc(db, 'users', firebaseUser.uid);
+
+                // CHAINED DATA LOADING PATTERN:
+                // 1. Auth State (User) -> 2. User Profile (Firestore) -> 3. Household Data (Firestore)
 
                 // Set up real-time listener for profile
                 profileUnsubscribe = onSnapshot(userRef, async (docSnap) => {

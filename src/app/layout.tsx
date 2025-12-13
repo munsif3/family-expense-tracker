@@ -21,6 +21,12 @@ export const metadata: Metadata = {
   description: "Secure, private finance management for couples.",
 };
 
+// Main Entry Point: RootLayout
+// This layout wraps the entire application.
+// It initializes global providers:
+// 1. Fonts (Geist)
+// 2. AuthProvider (Firebase Authentication State)
+// 3. Toaster (Notification System)
 export default function RootLayout({
   children,
 }: Readonly<{

@@ -113,6 +113,8 @@ export function useBudget() {
         });
 
         // 1. Calculate Summary (Annual) Status
+        // Aggregates all transactions for the selected year by category.
+        // Compares total spent vs (Monthly Budget * 12).
         const annualSpendMap: Record<string, number> = {};
         yearTransactions.forEach(t => {
             const name = t.categoryName || 'Other';
@@ -142,6 +144,7 @@ export function useBudget() {
         }).sort((a, b) => b.spent - a.spent);
 
         // 2. Calculate Monthly Status
+        // Breaks down spending month-by-month for trend analysis.
         const months = Array.from({ length: 12 }, (_, i) => {
             const date = new Date(selectedYear, i, 1);
             return {
