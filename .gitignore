@@ -47,3 +47,6 @@ next-env.d.ts
 # debug logs
 *.log
 build_log.txt
+
+# firebase
+.firebase/

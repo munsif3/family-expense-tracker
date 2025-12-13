@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { LayoutDashboard, Receipt, PiggyBank, PieChart, Lock, LogOut, Wallet, Settings } from 'lucide-react';
+import { LayoutDashboard, Receipt, PiggyBank, PieChart, Lock, LogOut, Wallet, Settings, CalendarClock, Calendar } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/features/auth/AuthContext';
@@ -14,16 +14,27 @@ const NAV_ITEMS = [
     { name: 'Expenses', href: '/expenses', icon: Receipt },
     { name: 'Savings', href: '/savings', icon: PiggyBank },
     { name: 'Budget', href: '/budget', icon: PieChart },
+    { name: 'Calendar', href: '/calendar', icon: Calendar },
+    { name: 'Subscriptions', href: '/subscriptions', icon: CalendarClock },
     { name: 'Vault', href: '/vault', icon: Lock },
     { name: 'Settings', href: '/settings', icon: Settings },
 ];
 
-export function Sidebar() {
+interface SidebarProps {
+    className?: string; // allow overriding classes (e.g., removing 'hidden')
+    onClose?: () => void;
+}
+
+export function Sidebar({ className, onClose }: SidebarProps) {
     const pathname = usePathname();
     const { user } = useAuth();
 
+    const handleLinkClick = () => {
+        if (onClose) onClose();
+    };
+
     return (
-        <div className="hidden border-r bg-background md:block w-64 flex-col h-screen sticky top-0 left-0">
+        <div className={cn("border-r bg-background flex-col h-full", className)}>
             <div className="flex h-16 items-center border-b px-6">
                 <Wallet className="h-6 w-6 text-primary mr-2" />
                 <span className="font-bold text-lg tracking-tight">FinanceApp</span>
@@ -37,6 +48,7 @@ export function Sidebar() {
                             <Link
                                 key={item.href}
                                 href={item.href}
+                                onClick={handleLinkClick}
                                 className={cn(
                                     "flex items-center gap-3 rounded-lg px-3 py-2 transition-all hover:text-primary",
                                     isActive
@@ -65,7 +77,10 @@ export function Sidebar() {
                         <Button
                             variant="ghost"
                             className="w-full justify-start text-muted-foreground hover:text-destructive"
-                            onClick={() => signOut(auth)}
+                            onClick={() => {
+                                signOut(auth);
+                                handleLinkClick();
+                            }}
                         >
                             <LogOut className="mr-2 h-4 w-4" />
                             Sign Out

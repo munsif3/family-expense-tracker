@@ -30,5 +30,24 @@ export const transactionService = {
             ...data,
             date: Timestamp.fromDate(data.date),
         });
+    },
+
+    async addRecurringTransaction(data: TransactionData, householdId: string, interval: 'weekly' | 'monthly' | 'yearly') {
+        const nextRun = new Date(data.date);
+        if (interval === 'weekly') nextRun.setDate(nextRun.getDate() + 7);
+        if (interval === 'monthly') nextRun.setMonth(nextRun.getMonth() + 1);
+        if (interval === 'yearly') nextRun.setFullYear(nextRun.getFullYear() + 1);
+
+        await addDoc(collection(db, 'recurring_transactions'), {
+            householdId,
+            description: data.description,
+            amount: data.amount,
+            type: data.type,
+            categoryId: data.categoryId,
+            interval,
+            nextRunDate: Timestamp.fromDate(nextRun),
+            active: true,
+            createdAt: serverTimestamp()
+        });
     }
 };

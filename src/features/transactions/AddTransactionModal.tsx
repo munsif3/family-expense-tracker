@@ -105,6 +105,38 @@ export function AddTransactionModal({ transactionToEdit, open: controlledOpen, o
                         )}
                     </div>
 
+                    {!transactionToEdit && (
+                        <div className="flex items-center space-x-2 rounded-md border p-3">
+                            <div className="flex-1">
+                                <Label htmlFor="recurring" className="text-sm font-medium">Recurring Transaction?</Label>
+                                <p className="text-xs text-muted-foreground">Automatically create this transaction in the future.</p>
+                            </div>
+                            <div className="flex items-center gap-2">
+                                <input
+                                    type="checkbox"
+                                    id="recurring"
+                                    className="h-4 w-4 rounded border-gray-300"
+                                    {...form.register('isRecurring')}
+                                />
+                                {form.watch('isRecurring') && (
+                                    <Select
+                                        onValueChange={(val) => form.setValue('interval', val as any)}
+                                        value={form.watch('interval')}
+                                    >
+                                        <SelectTrigger className="w-[110px] h-8 text-xs">
+                                            <SelectValue />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            <SelectItem value="weekly">Weekly</SelectItem>
+                                            <SelectItem value="monthly">Monthly</SelectItem>
+                                            <SelectItem value="yearly">Yearly</SelectItem>
+                                        </SelectContent>
+                                    </Select>
+                                )}
+                            </div>
+                        </div>
+                    )}
+
                     <Button type="submit" className="w-full" disabled={loading}>
                         {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                         {transactionToEdit ? 'Update Transaction' : 'Save Transaction'}

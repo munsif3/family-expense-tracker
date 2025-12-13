@@ -2,6 +2,7 @@ import { useState, useEffect, useMemo } from 'react';
 import { useAuth } from '@/features/auth/AuthContext';
 import { collection, query, where, orderBy, limit, onSnapshot } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
+import { createSecureQuery } from '@/lib/firestoreUtils';
 import { Transaction } from '@/types';
 
 export function useDashboard() {
@@ -13,12 +14,15 @@ export function useDashboard() {
     useEffect(() => {
         if (!profile?.householdId) return;
 
-        const q = query(
-            collection(db, 'transactions'),
-            where('householdId', '==', profile.householdId),
-            orderBy('date', 'desc'),
-            limit(50)
-        );
+        const q = createSecureQuery({
+            collectionName: 'transactions',
+            householdId: profile.householdId,
+            userId: profile.uid,
+            constraints: [
+                orderBy('date', 'desc'),
+                limit(50)
+            ]
+        });
 
         const unsubscribe = onSnapshot(q, (snapshot) => {
             const data = snapshot.docs.map(doc => ({

@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useAuth } from '@/features/auth/AuthContext';
 import { collection, query, where, orderBy, onSnapshot, limit } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
+import { createSecureQuery } from '@/lib/firestoreUtils';
 import { Transaction } from '@/types';
 
 export function useTransactionsList() {
@@ -19,12 +20,15 @@ export function useTransactionsList() {
         if (!profile?.householdId) return;
 
         // Fetch more for this list view, say 100 recent
-        const q = query(
-            collection(db, 'transactions'),
-            where('householdId', '==', profile.householdId),
-            orderBy('date', 'desc'),
-            limit(100)
-        );
+        const q = createSecureQuery({
+            collectionName: 'transactions',
+            householdId: profile.householdId,
+            userId: profile.uid,
+            constraints: [
+                orderBy('date', 'desc'),
+                limit(100)
+            ]
+        });
 
         const unsubscribe = onSnapshot(q, (snapshot) => {
             const data = snapshot.docs.map(doc => ({

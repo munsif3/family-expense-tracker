@@ -57,6 +57,10 @@ service cloud.firestore {
         allow read, write: if isAuthenticated(); 
     }
 
+    match /recurring_transactions/{recurringId} {
+        allow read, write: if isAuthenticated();
+    }
+
     // Default deny for anything else
     match /{document=**} {
       allow read, write: if false;

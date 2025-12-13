@@ -2,6 +2,7 @@ import { useState, useEffect, useMemo } from 'react';
 import { useAuth } from '@/features/auth/AuthContext';
 import { collection, query, where, onSnapshot, deleteDoc, doc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
+import { createSecureQuery } from '@/lib/firestoreUtils';
 import { Asset } from '@/types';
 import { Landmark, Gem, TrendingUp, Building2, Bitcoin, Wallet, LucideIcon } from 'lucide-react';
 
@@ -26,10 +27,11 @@ export function useSavings() {
     useEffect(() => {
         if (!profile?.householdId) return;
 
-        const q = query(
-            collection(db, 'assets'),
-            where('householdId', '==', profile.householdId)
-        );
+        const q = createSecureQuery({
+            collectionName: 'assets',
+            householdId: profile.householdId,
+            userId: profile.uid
+        });
 
         const unsubscribe = onSnapshot(q, (snapshot) => {
             const data = snapshot.docs.map(doc => ({
@@ -75,12 +77,6 @@ export function useSavings() {
     }
 
     const [openAdd, setOpenAdd] = useState(false);
-
-    // ... existing useEffect ...
-
-    // ... existing stats/grouped calc ...
-
-    // ... existing handleDelete ...
 
     return {
         assets,

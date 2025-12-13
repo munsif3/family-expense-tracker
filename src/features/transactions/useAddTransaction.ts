@@ -13,6 +13,8 @@ const transactionSchema = z.object({
     categoryId: z.string().min(1, "Category is required"),
     description: z.string().min(1, "Description is required"),
     date: z.string().min(1, "Date is required"),
+    isRecurring: z.boolean().optional(),
+    interval: z.enum(['weekly', 'monthly', 'yearly']).optional(),
 });
 
 export type TransactionFormValues = z.infer<typeof transactionSchema>;
@@ -33,6 +35,8 @@ export function useAddTransaction(
             categoryId: '',
             amount: '',
             description: '',
+            isRecurring: false,
+            interval: 'monthly',
         },
     });
 
@@ -44,6 +48,7 @@ export function useAddTransaction(
                 categoryId: transactionToEdit.categoryId,
                 description: transactionToEdit.description,
                 date: transactionToEdit.date.toDate().toISOString().split('T')[0],
+                isRecurring: false, // Editing recurrence not supported in this modal yet
             });
         } else {
             if (open) {
@@ -53,6 +58,8 @@ export function useAddTransaction(
                     categoryId: '',
                     description: '',
                     date: new Date().toISOString().split('T')[0],
+                    isRecurring: false,
+                    interval: 'monthly',
                 });
             }
         }
@@ -77,6 +84,15 @@ export function useAddTransaction(
                 await transactionService.updateTransaction(transactionToEdit.id, payload);
             } else {
                 await transactionService.addTransaction(payload, profile.householdId, user.uid);
+
+                // Handle Recurring creation
+                if (data.isRecurring && data.interval) {
+                    await transactionService.addRecurringTransaction(
+                        payload,
+                        profile.householdId,
+                        data.interval
+                    );
+                }
             }
 
             onOpenChange?.(false);

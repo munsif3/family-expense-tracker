@@ -62,7 +62,7 @@ export function TransactionList({ transactions, loading, compact }: TransactionL
                         {transactions.map((tx) => (
                             <div
                                 key={tx.id}
-                                className="flex items-center justify-between p-4 border rounded-lg bg-card hover:bg-muted/50 transition-colors group"
+                                className="flex flex-col sm:flex-row sm:items-center justify-between p-4 border rounded-lg bg-card hover:bg-muted/50 transition-colors group gap-4"
                             >
                                 <div className="flex items-center gap-4">
                                     <div
@@ -81,7 +81,7 @@ export function TransactionList({ transactions, loading, compact }: TransactionL
                                         </p>
                                     </div>
                                 </div>
-                                <div className="flex items-center gap-4">
+                                <div className="flex items-center justify-between w-full sm:w-auto gap-4">
                                     <div className={cn(
                                         "font-bold",
                                         tx.type === 'income' ? "text-green-600" : "text-black dark:text-white"

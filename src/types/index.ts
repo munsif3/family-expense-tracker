@@ -42,6 +42,19 @@ export interface Transaction {
     attachments: Attachment[];
 }
 
+export interface RecurringTransaction {
+    id: string;
+    householdId: string;
+    description: string;
+    amount: number;
+    type: 'income' | 'expense';
+    categoryId: string;
+    interval: 'weekly' | 'monthly' | 'yearly';
+    nextRunDate: Timestamp;
+    active: boolean;
+    createdAt: Timestamp;
+}
+
 export interface Attachment {
     id: string;
     url: string;

@@ -9,8 +9,44 @@
                     "order": "ASCENDING"
                 },
                 {
+                    "fieldPath": "userId",
+                    "order": "ASCENDING"
+                },
+                {
                     "fieldPath": "date",
                     "order": "DESCENDING"
+                }
+            ]
+        },
+        {
+            "collectionGroup": "recurring_transactions",
+            "queryScope": "COLLECTION",
+            "fields": [
+                {
+                    "fieldPath": "householdId",
+                    "order": "ASCENDING"
+                },
+                {
+                    "fieldPath": "active",
+                    "order": "ASCENDING"
+                },
+                {
+                    "fieldPath": "nextRunDate",
+                    "order": "ASCENDING"
+                }
+            ]
+        },
+        {
+            "collectionGroup": "assets",
+            "queryScope": "COLLECTION",
+            "fields": [
+                {
+                    "fieldPath": "householdId",
+                    "order": "ASCENDING"
+                },
+                {
+                    "fieldPath": "userId",
+                    "order": "ASCENDING"
                 }
             ]
         }
