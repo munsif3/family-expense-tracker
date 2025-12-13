@@ -8,6 +8,8 @@ import { TrendChart } from '@/features/dashboard/TrendChart';
 import { Card, CardContent, CardTitle, CardHeader } from '@/components/ui/card';
 import { ArrowDownLeft, ArrowUpRight, Wallet, Loader2 } from 'lucide-react';
 import { formatCurrency } from '@/lib/utils';
+import { useFinancialInsights } from '@/features/insights/useFinancialInsights';
+import { InsightsWidget } from '@/features/insights/InsightsWidget';
 
 
 export default function DashboardPage() {
@@ -17,6 +19,8 @@ export default function DashboardPage() {
         currency,
         transactions
     } = useDashboard();
+
+    const { insights, loading: insightsLoading } = useFinancialInsights();
 
     if (loading) {
         return (
@@ -34,6 +38,8 @@ export default function DashboardPage() {
                     <p className="text-muted-foreground mt-1">Overview of your family finances</p>
                 </div>
             </div>
+
+            <InsightsWidget insights={insights} loading={insightsLoading} />
 
             {/* Summary Cards */}
             <div className="grid gap-4 md:grid-cols-3">

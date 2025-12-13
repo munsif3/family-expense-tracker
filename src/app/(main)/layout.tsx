@@ -40,16 +40,17 @@ export default function DashboardLayout({
     }
 
     return (
-        <div className="flex min-h-screen bg-muted/20 flex-col lg:flex-row">
+        <div className="fixed inset-0 flex overflow-hidden bg-muted/20 flex-col lg:flex-row">
             {/* Mobile Header (Visible on small screens) */}
             <MobileHeader />
 
             {/* Desktop Sidebar (Hidden on small screens) */}
-            <div className="hidden lg:block w-64 border-r bg-background h-screen sticky top-0">
+            <aside className="hidden lg:block w-64 border-r bg-background h-full">
                 <Sidebar />
-            </div>
+            </aside>
 
-            <main className="flex-1 p-4 lg:p-8 overflow-y-auto h-[calc(100vh-65px)] lg:h-screen">
+            {/* Main Content Area */}
+            <main className="flex-1 overflow-y-auto p-4 lg:p-8">
                 {children}
             </main>
         </div>
