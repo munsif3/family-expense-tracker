@@ -1,203 +1,142 @@
 'use client';
 
-import { useState, useEffect, useMemo } from 'react';
-import { useAuth } from '@/features/auth/AuthContext';
-import { collection, query, where, onSnapshot, deleteDoc, doc } from 'firebase/firestore';
-import { db } from '@/lib/firebase';
-import { Asset } from '@/types';
-import { AddAssetModal } from '@/features/savings/AddAssetModal';
-import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
-import { formatCurrency, cn } from '@/lib/utils';
-import { TrendingUp, Wallet, Landmark, Gem, Building2, Bitcoin, MoreHorizontal, Edit2, Trash2 } from 'lucide-react';
-import { format } from 'date-fns';
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { useState } from 'react';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Plus, TrendingUp, DollarSign } from 'lucide-react';
+import { formatCurrency } from '@/lib/utils';
+import { format } from 'date-fns';
+import { AddAssetModal } from '@/features/savings/AddAssetModal';
+import { useSavings, ASSET_ICONS } from '@/features/savings/useSavings';
 
-const ASSET_ICONS: Record<string, any> = {
-    'FD': Landmark,
-    'Gold': Gem,
-    'Jewellery': Gem,
-    'Stock': TrendingUp,
-    'Property': Building2,
-    'Crypto': Bitcoin,
-    'MonthlySaving': Wallet
-};
 
 export default function SavingsPage() {
-    const { profile, household } = useAuth();
-    const [assets, setAssets] = useState<Asset[]>([]);
-    const [loading, setLoading] = useState(true);
-    const currency = household?.currency || 'USD';
-    const [editingAsset, setEditingAsset] = useState<Asset | null>(null);
-    const [deletingAsset, setDeletingAsset] = useState<Asset | null>(null);
+    const {
+        assets,
+        stats,
+        grouped,
+        loading,
+        currency,
+        assetToEdit,
+        setAssetToEdit,
+        openAdd,
+        setOpenAdd
+    } = useSavings();
 
-    useEffect(() => {
-        if (!profile?.householdId) return;
-
-        const q = query(
-            collection(db, 'assets'),
-            where('householdId', '==', profile.householdId)
-        );
-
-        const unsubscribe = onSnapshot(q, (snapshot) => {
-            const data = snapshot.docs.map(doc => ({
-                id: doc.id,
-                ...doc.data()
-            })) as Asset[];
-            setAssets(data);
-            setLoading(false);
-        });
-
-        return () => unsubscribe();
-    }, [profile?.householdId]);
-
-    const stats = useMemo(() => {
-        let totalInvested = 0;
-        let totalCurrent = 0;
-        assets.forEach(a => {
-            totalInvested += a.amountInvested;
-            totalCurrent += (a.currentValue || a.amountInvested);
-        });
-        const gain = totalCurrent - totalInvested;
-        const gainPercent = totalInvested > 0 ? (gain / totalInvested) * 100 : 0;
-        return { totalCurrent, gain, gainPercent };
-    }, [assets]);
-
-    // Group assets by Type
-    const grouped = useMemo(() => {
-        const groups: Record<string, Asset[]> = {};
-        assets.forEach(a => {
-            if (!groups[a.type]) groups[a.type] = [];
-            groups[a.type].push(a);
-        });
-        return groups;
-    }, [assets]);
-
-    const handleDelete = async () => {
-        if (!deletingAsset) return;
-        try {
-            await deleteDoc(doc(db, 'assets', deletingAsset.id));
-            setDeletingAsset(null);
-        } catch (error) {
-            console.error("Error deleting asset:", error);
-        }
+    if (loading) {
+        return <div className="p-8 text-center text-muted-foreground">Loading savings...</div>;
     }
 
     return (
-        <div className="space-y-6">
-            <div className="flex flex-col md:flex-row items-center justify-between gap-4">
+        <div className="max-w-4xl mx-auto space-y-8 pb-20 md:pb-0">
+            <div className="flex items-center justify-between">
                 <div>
                     <h1 className="text-3xl font-bold tracking-tight">Savings & Investments</h1>
-                    <p className="text-muted-foreground">Track your comprehensive net worth.</p>
+                    <p className="text-muted-foreground mt-1">Track your assets and portfolio growth</p>
                 </div>
-                <AddAssetModal />
+                <Button onClick={() => setOpenAdd(true)} className="gap-2">
+                    <Plus className="h-4 w-4" />
+                    Add Asset
+                </Button>
             </div>
 
-            {/* Portfolio Summary Card */}
-            <Card className="bg-gradient-to-r from-slate-900 to-slate-800 text-white">
-                <CardContent className="p-8">
-                    <p className="text-slate-300 font-medium mb-1">Current Portfolio Value</p>
-                    <div className="flex items-baseline gap-4">
-                        <h2 className="text-4xl font-bold">{formatCurrency(stats.totalCurrent, currency)}</h2>
-                        <div className={cn("flex items-center text-sm font-semibold px-2 py-1 rounded bg-white/10", stats.gain >= 0 ? "text-green-400" : "text-red-400")}>
-                            <TrendingUp className="h-4 w-4 mr-1" />
-                            {stats.gain >= 0 ? '+' : ''}{stats.gainPercent.toFixed(1)}% all time
-                        </div>
-                    </div>
-                </CardContent>
-            </Card>
+            {/* Summary Cards */}
+            <div className="grid gap-4 md:grid-cols-3">
+                <Card>
+                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                        <CardTitle className="text-sm font-medium">Total Portfolio Value</CardTitle>
+                        <DollarSign className="h-4 w-4 text-muted-foreground" />
+                    </CardHeader>
+                    <CardContent>
+                        <div className="text-2xl font-bold">{formatCurrency(stats.totalCurrent, currency)}</div>
+                    </CardContent>
+                </Card>
 
-            {/* Asset Groups */}
-            <div className="space-y-4">
-                {Object.entries(grouped).map(([type, items]) => {
-                    const TypeIcon = ASSET_ICONS[type] || Wallet;
-                    const groupTotal = items.reduce((sum, item) => sum + (item.currentValue || item.amountInvested), 0);
+                <Card>
+                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                        <CardTitle className="text-sm font-medium">Total Gain/Loss</CardTitle>
+                        <TrendingUp className={`h-4 w-4 ${stats.gain >= 0 ? 'text-green-500' : 'text-red-500'}`} />
+                    </CardHeader>
+                    <CardContent>
+                        <div className={`text-2xl font-bold ${stats.gain >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                            {stats.gain >= 0 ? '+' : ''}{formatCurrency(stats.gain, currency)}
+                        </div>
+                    </CardContent>
+                </Card>
+
+                <Card>
+                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                        <CardTitle className="text-sm font-medium">Return on Investment</CardTitle>
+                        <TrendingUp className="h-4 w-4 text-muted-foreground" />
+                    </CardHeader>
+                    <CardContent>
+                        <div className={`text-2xl font-bold ${stats.gainPercent >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                            {stats.gainPercent >= 0 ? '+' : ''}{stats.gainPercent.toFixed(1)}%
+                        </div>
+                    </CardContent>
+                </Card>
+            </div>
+
+            <div className="grid gap-6 md:grid-cols-2">
+                {Object.entries(grouped).map(([type, typeAssets]) => {
+                    const TypeIcon = ASSET_ICONS[type] || DollarSign;
+                    const typeTotal = typeAssets.reduce((sum, a) => sum + (a.currentValue || a.amountInvested), 0);
 
                     return (
-                        <div key={type} className="border rounded-xl bg-card overflow-hidden">
-                            <div className="bg-muted/30 px-6 py-4 flex items-center justify-between border-b">
-                                <div className="flex items-center gap-2">
-                                    <TypeIcon className="h-5 w-5 text-primary" />
-                                    <span className="font-semibold text-lg">{type === 'FD' ? 'Fixed Deposits' : type}</span>
-                                    <span className="text-muted-foreground text-sm">({items.length} items)</span>
-                                </div>
-                                <span className="font-bold">{formatCurrency(groupTotal, currency)}</span>
-                            </div>
-                            <div className="p-4 grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-                                {items.map(asset => (
-                                    <Card key={asset.id} className="shadow-none border hover:border-primary/50 transition-colors group relative">
-
-                                        <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                                            <DropdownMenu>
-                                                <DropdownMenuTrigger asChild>
-                                                    <Button variant="ghost" className="h-8 w-8 p-0">
-                                                        <MoreHorizontal className="h-4 w-4" />
-                                                    </Button>
-                                                </DropdownMenuTrigger>
-                                                <DropdownMenuContent align="end">
-                                                    <DropdownMenuItem onClick={() => setEditingAsset(asset)}>
-                                                        <Edit2 className="mr-2 h-3.5 w-3.5" /> Edit
-                                                    </DropdownMenuItem>
-                                                    <DropdownMenuItem onClick={() => setDeletingAsset(asset)} className="text-red-600">
-                                                        <Trash2 className="mr-2 h-3.5 w-3.5" /> Delete
-                                                    </DropdownMenuItem>
-                                                </DropdownMenuContent>
-                                            </DropdownMenu>
+                        <Card key={type}>
+                            <CardHeader className="pb-3">
+                                <div className="flex items-center justify-between">
+                                    <div className="flex items-center gap-2">
+                                        <div className="p-2 bg-primary/10 rounded-lg">
+                                            <TypeIcon className="h-5 w-5 text-primary" />
                                         </div>
-
-                                        <CardContent className="p-4 space-y-2">
-                                            <div className="font-bold text-lg truncate pr-8">{asset.name}</div>
-                                            <div className="flex justify-between text-sm">
-                                                <span className="text-muted-foreground">Invested:</span>
-                                                <span>{formatCurrency(asset.amountInvested, asset.currency)}</span>
+                                        <CardTitle className="text-lg">{type}</CardTitle>
+                                    </div>
+                                    <div className="font-bold text-lg">
+                                        {formatCurrency(typeTotal, currency)}
+                                    </div>
+                                </div>
+                            </CardHeader>
+                            <CardContent className="space-y-4">
+                                {typeAssets.map(asset => (
+                                    <div
+                                        key={asset.id}
+                                        className="flex items-center justify-between p-3 rounded-lg bg-muted/50 hover:bg-muted transition-colors cursor-pointer group"
+                                        onClick={() => setAssetToEdit(asset)}
+                                    >
+                                        <div>
+                                            <p className="font-medium">{asset.name}</p>
+                                            <div className="flex items-center gap-2 text-xs text-muted-foreground mt-0.5">
+                                                <span>{format(asset.buyDate.toDate(), 'MMM d, yyyy')}</span>
                                             </div>
-                                            <div className="flex justify-between text-sm">
-                                                <span className="text-muted-foreground">Current:</span>
-                                                <span className="font-bold">{formatCurrency(asset.currentValue || 0, asset.currency)}</span>
-                                            </div>
-                                            <div className="text-xs text-muted-foreground mt-2">
-                                                Bought: {format(asset.buyDate.toDate(), 'MMM d, yyyy')}
-                                            </div>
-                                        </CardContent>
-                                    </Card>
+                                        </div>
+                                        <div className="text-right">
+                                            <p className="font-semibold">{formatCurrency(asset.currentValue || asset.amountInvested, currency)}</p>
+                                            <p className={`text-xs ${(asset.currentValue || asset.amountInvested) >= asset.amountInvested ? 'text-green-600' : 'text-red-600'}`}>
+                                                {((asset.currentValue || asset.amountInvested) - asset.amountInvested) >= 0 ? '+' : ''}
+                                                {formatCurrency((asset.currentValue || asset.amountInvested) - asset.amountInvested, currency)}
+                                            </p>
+                                        </div>
+                                    </div>
                                 ))}
-                            </div>
-                        </div>
+                            </CardContent>
+                        </Card>
                     );
                 })}
-
-                {assets.length === 0 && !loading && (
-                    <div className="text-center py-12 text-muted-foreground border-2 border-dashed rounded-xl">
-                        No assets added yet. Start building your portfolio!
-                    </div>
-                )}
             </div>
 
-            {/* Edit Asset Modal */}
-            {editingAsset && (
-                <AddAssetModal
-                    assetToEdit={editingAsset}
-                    open={!!editingAsset}
-                    onOpenChange={(open) => !open && setEditingAsset(null)}
-                />
-            )}
-
-            {/* Delete Asset Dialog */}
-            <Dialog open={!!deletingAsset} onOpenChange={(open) => !open && setDeletingAsset(null)}>
-                <DialogContent>
-                    <DialogHeader>
-                        <DialogTitle>Delete Asset?</DialogTitle>
-                        <DialogDescription>
-                            Are you sure you want to delete <span className="font-bold">{deletingAsset?.name}</span>? This action cannot be undone.
-                        </DialogDescription>
-                    </DialogHeader>
-                    <DialogFooter>
-                        <Button variant="outline" onClick={() => setDeletingAsset(null)}>Cancel</Button>
-                        <Button variant="destructive" onClick={handleDelete}>Delete</Button>
-                    </DialogFooter>
-                </DialogContent>
-            </Dialog>
+            <AddAssetModal
+                open={openAdd || !!assetToEdit}
+                onOpenChange={(open) => {
+                    if (!open) {
+                        setOpenAdd(false);
+                        setAssetToEdit(null);
+                    } else {
+                        setOpenAdd(true);
+                    }
+                }}
+                assetToEdit={assetToEdit || undefined}
+            />
         </div>
     );
 }

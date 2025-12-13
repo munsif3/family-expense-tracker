@@ -1,108 +1,107 @@
 'use client';
 
-import { useState, useEffect, useMemo } from 'react';
-import { useAuth } from '@/features/auth/AuthContext';
-import { collection, query, where, orderBy, limit, onSnapshot } from 'firebase/firestore';
-import { db } from '@/lib/firebase';
-import { Transaction } from '@/types';
-import { formatCurrency } from '@/lib/utils';
-import { AddTransactionModal } from '@/features/transactions/AddTransactionModal';
+import { useDashboard } from '@/features/dashboard/useDashboard';
 import { TransactionList } from '@/features/transactions/TransactionList';
 import { CashflowChart } from '@/features/dashboard/CashflowChart';
 import { CategoryPieChart } from '@/features/dashboard/CategoryPieChart';
 import { TrendChart } from '@/features/dashboard/TrendChart';
+import { Card, CardContent, CardTitle, CardHeader } from '@/components/ui/card';
+import { ArrowDownLeft, ArrowUpRight, Wallet, Loader2 } from 'lucide-react';
+import { formatCurrency } from '@/lib/utils';
+import { AddTransactionModal } from '@/features/transactions/AddTransactionModal';
+import { Button } from '@/components/ui/button';
+import { useState } from 'react';
+
 
 export default function DashboardPage() {
-    const { profile, household } = useAuth();
-    const [transactions, setTransactions] = useState<Transaction[]>([]);
-    const [txLoading, setTxLoading] = useState(true);
-    const currency = household?.currency || 'USD';
+    const {
+        summary,
+        loading,
+        currency,
+        transactions
+    } = useDashboard();
 
-    // Fetch Transactions
-    useEffect(() => {
-        if (!profile?.householdId) return;
+    const [openAdd, setOpenAdd] = useState(false);
 
-        const q = query(
-            collection(db, 'transactions'),
-            where('householdId', '==', profile.householdId),
-            orderBy('date', 'desc'),
-            limit(50)
+    if (loading) {
+        return (
+            <div className="flex h-96 items-center justify-center">
+                <Loader2 className="h-8 w-8 animate-spin text-primary" />
+            </div>
         );
-
-        const unsubscribe = onSnapshot(q, (snapshot) => {
-            const data = snapshot.docs.map(doc => ({
-                id: doc.id,
-                ...doc.data()
-            })) as Transaction[];
-            setTransactions(data);
-            setTxLoading(false);
-        }, (error) => {
-            console.error("Firestore Error:", error);
-            setTxLoading(false);
-        });
-
-        return () => unsubscribe();
-    }, [profile?.householdId]);
-
-    // Calculations
-    const summary = useMemo(() => {
-        let income = 0;
-        let expense = 0;
-        transactions.forEach(t => {
-            if (t.type === 'income') income += t.amount;
-            else expense += t.amount;
-        });
-        return {
-            income,
-            expense,
-            balance: income - expense,
-            savingsRate: income > 0 ? ((income - expense) / income) * 100 : 0
-        };
-    }, [transactions]);
+    }
 
     return (
-        <>
-            <header className="flex items-center justify-between mb-8">
+        <div className="space-y-8 pb-20 md:pb-0">
+            <div className="flex items-center justify-between">
                 <div>
                     <h1 className="text-3xl font-bold tracking-tight">Dashboard</h1>
-                    <p className="text-muted-foreground">Overview of your family finances</p>
+                    <p className="text-muted-foreground mt-1">Overview of your family finances</p>
                 </div>
-                <div className="flex items-center gap-2">
-                    <AddTransactionModal />
-                </div>
-            </header>
+                <Button onClick={() => setOpenAdd(true)}>
+                    Add Transaction
+                </Button>
+            </div>
 
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4 mb-8">
-                <div className="p-6 bg-card rounded-xl border shadow-sm">
-                    <h3 className="text-sm font-medium text-muted-foreground">Total Balance</h3>
-                    <div className="text-2xl font-bold mt-2">{formatCurrency(summary.balance, currency)}</div>
+            {/* Summary Cards */}
+            <div className="grid gap-4 md:grid-cols-3">
+                <Card>
+                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                        <CardTitle className="text-sm font-medium">Total Balance</CardTitle>
+                        <Wallet className="h-4 w-4 text-muted-foreground" />
+                    </CardHeader>
+                    <CardContent>
+                        <div className="text-2xl font-bold">{formatCurrency(summary.balance, currency)}</div>
+                        <p className="text-xs text-muted-foreground mt-1">
+                            Current month net flow
+                        </p>
+                    </CardContent>
+                </Card>
+                <Card>
+                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                        <CardTitle className="text-sm font-medium">Income</CardTitle>
+                        <ArrowDownLeft className="h-4 w-4 text-green-500" />
+                    </CardHeader>
+                    <CardContent>
+                        <div className="text-2xl font-bold text-green-600">+{formatCurrency(summary.income, currency)}</div>
+                        <p className="text-xs text-muted-foreground mt-1">
+                            This month
+                        </p>
+                    </CardContent>
+                </Card>
+                <Card>
+                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                        <CardTitle className="text-sm font-medium">Expenses</CardTitle>
+                        <ArrowUpRight className="h-4 w-4 text-red-500" />
+                    </CardHeader>
+                    <CardContent>
+                        <div className="text-2xl font-bold text-red-600">-{formatCurrency(summary.expense, currency)}</div>
+                        <p className="text-xs text-muted-foreground mt-1">
+                            This month
+                        </p>
+                    </CardContent>
+                </Card>
+            </div>
+
+            {/* Charts Grid */}
+            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-7">
+                {/* Cashflow Bar Chart */}
+                <div className="col-span-4">
+                    <CashflowChart transactions={transactions} currency={currency} />
                 </div>
-                <div className="p-6 bg-card rounded-xl border shadow-sm">
-                    <h3 className="text-sm font-medium text-muted-foreground">Monthly Income</h3>
-                    <div className="text-2xl font-bold mt-2 text-green-600">+{formatCurrency(summary.income, currency)}</div>
-                </div>
-                <div className="p-6 bg-card rounded-xl border shadow-sm">
-                    <h3 className="text-sm font-medium text-muted-foreground">Monthly Expenses</h3>
-                    <div className="text-2xl font-bold mt-2 text-red-600">-{formatCurrency(summary.expense, currency)}</div>
-                </div>
-                <div className="p-6 bg-card rounded-xl border shadow-sm">
-                    <h3 className="text-sm font-medium text-muted-foreground">Savings Rate</h3>
-                    <div className="text-2xl font-bold mt-2">{summary.savingsRate.toFixed(1)}%</div>
+
+                {/* Recent Transactions List */}
+                <div className="col-span-3">
+                    <TransactionList transactions={transactions} compact />
                 </div>
             </div>
 
-            {/* Charts Section */}
-            <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 mb-8">
-                <div className="col-span-2 grid gap-6 md:grid-cols-2">
-                    <CashflowChart transactions={transactions} currency={currency} />
-                    <CategoryPieChart transactions={transactions} currency={currency} />
-                </div>
+            <div className="grid gap-4 md:grid-cols-2">
+                <CategoryPieChart transactions={transactions} currency={currency} />
                 <TrendChart transactions={transactions} currency={currency} />
             </div>
 
-            <div className="grid gap-4">
-                <TransactionList transactions={transactions} loading={txLoading} />
-            </div>
-        </>
+            <AddTransactionModal open={openAdd} onOpenChange={setOpenAdd} />
+        </div>
     );
 }

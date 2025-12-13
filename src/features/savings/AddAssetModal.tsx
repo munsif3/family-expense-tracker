@@ -1,38 +1,12 @@
-'use client';
-
-import { useState, useEffect } from 'react';
-import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import * as z from 'zod';
+import { useState } from 'react';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Loader2, Plus } from 'lucide-react';
-import { db } from '@/lib/firebase';
-import { collection, addDoc, serverTimestamp, Timestamp, updateDoc, doc } from 'firebase/firestore';
-import { useAuth } from '@/features/auth/AuthContext';
 import { Asset } from '@/types';
-
-const assetSchema = z.object({
-    name: z.string().min(2, "Name is required"),
-    type: z.string(),
-    amountInvested: z.string().min(1, "Amount is required"),
-    currentValue: z.string().optional(),
-    buyDate: z.string().min(1, "Date is required"),
-});
-
-type AssetFormValues = z.infer<typeof assetSchema>;
-
-const ASSET_TYPES = [
-    { value: 'FD', label: 'Fixed Deposit' },
-    { value: 'Gold', label: 'Gold / Silver' },
-    { value: 'Stock', label: 'Stocks / Mutual Funds' },
-    { value: 'Property', label: 'Real Estate' },
-    { value: 'Crypto', label: 'Crypto' },
-    { value: 'Jewellery', label: 'Jewellery' },
-];
+import { useAddAsset } from './useAddAsset';
 
 interface AddAssetModalProps {
     assetToEdit?: Asset;
@@ -42,80 +16,11 @@ interface AddAssetModalProps {
 
 export function AddAssetModal({ assetToEdit, open: controlledOpen, onOpenChange }: AddAssetModalProps) {
     const [internalOpen, setInternalOpen] = useState(false);
-    const { user, profile, household } = useAuth();
-    const [loading, setLoading] = useState(false);
 
     const isOpen = controlledOpen !== undefined ? controlledOpen : internalOpen;
     const setOpen = onOpenChange || setInternalOpen;
 
-    const form = useForm<AssetFormValues>({
-        resolver: zodResolver(assetSchema),
-        defaultValues: {
-            type: 'FD',
-            buyDate: new Date().toISOString().split('T')[0],
-        },
-    });
-
-    useEffect(() => {
-        if (assetToEdit) {
-            form.reset({
-                name: assetToEdit.name,
-                type: assetToEdit.type,
-                amountInvested: assetToEdit.amountInvested.toString(),
-                currentValue: (assetToEdit.currentValue || assetToEdit.amountInvested).toString(),
-                buyDate: assetToEdit.buyDate.toDate().toISOString().split('T')[0]
-            });
-        } else {
-            form.reset({
-                type: 'FD',
-                buyDate: new Date().toISOString().split('T')[0],
-                name: '',
-                amountInvested: '',
-                currentValue: '',
-            });
-        }
-    }, [assetToEdit, isOpen, form]);
-
-
-    const onSubmit = async (data: AssetFormValues) => {
-        if (!user || !profile?.householdId) return;
-        setLoading(true);
-
-        try {
-            const invested = parseFloat(data.amountInvested);
-            const current = data.currentValue ? parseFloat(data.currentValue) : invested; // Default to invested if not provided
-
-            const payload = {
-                name: data.name,
-                type: data.type,
-                amountInvested: invested,
-                currentValue: current,
-                buyDate: Timestamp.fromDate(new Date(data.buyDate)),
-            };
-
-            if (assetToEdit) {
-                await updateDoc(doc(db, 'assets', assetToEdit.id), payload);
-            } else {
-                await addDoc(collection(db, 'assets'), {
-                    ...payload,
-                    householdId: profile.householdId,
-                    ownerUserId: user.uid,
-                    currency: household?.currency || 'USD',
-                    isEncrypted: false,
-                    attachments: [],
-                    meta: {},
-                    createdAt: serverTimestamp(),
-                });
-            }
-
-            setOpen(false);
-            if (!assetToEdit) form.reset();
-        } catch (error) {
-            console.error("Error saving asset:", error);
-        } finally {
-            setLoading(false);
-        }
-    };
+    const { form, loading, submitAsset, ASSET_TYPES } = useAddAsset(assetToEdit, isOpen, setOpen);
 
     return (
         <Dialog open={isOpen} onOpenChange={setOpen}>
@@ -133,7 +38,7 @@ export function AddAssetModal({ assetToEdit, open: controlledOpen, onOpenChange 
                         Track your FDs, Gold, Stocks, or other assets.
                     </DialogDescription>
                 </DialogHeader>
-                <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 pt-4">
+                <form onSubmit={form.handleSubmit(submitAsset)} className="space-y-4 pt-4">
 
                     <div className="grid grid-cols-4 items-center gap-4">
                         <Label className="text-right">Type</Label>

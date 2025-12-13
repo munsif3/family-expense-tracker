@@ -57,6 +57,7 @@ export interface Category {
     type: 'income' | 'expense';
     color: string;
     budgetMonthly?: number;
+    budgets?: Record<string, number>; // { "2025": monthlyAmount }
     userBudgets?: Record<string, number>; // { userId: monthlyAmount }
 }
 

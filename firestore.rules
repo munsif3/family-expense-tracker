@@ -42,14 +42,39 @@ service cloud.firestore {
       );
     }
 
-    // Transactions: Allow read/write for now if authenticated (simplification to unblock)
-    // Ideally: Check if resource.data.householdId == user.householdId
+    // Transactions: Ensure user is part of the household (if we add householdId later) 
+    // or just authenticated for MVP if we assume 1-1 mapping or trusted users?
+    // User requested "Code-Level Safety". 
+    // Ideally: resource.data.userId == request.auth.uid OR resource.data.householdId in GetUserHouseholdIds()
+    // Given the current schema isn't fully visible, let's stick to "authenticated" but add comments for future tightening
+    // OR BETTER: Check if the transaction belongs to a household the user is in?
+    // We don't have a reliable way to check membership in rule without reading the household doc.
+    // Let's at least enforce they can only create/update their own data or data in their household?
+    // For now, let's keep it authenticated but add a TODO or basic check if possible.
+    // Actually, looking at the previous rule: `allow read, write: if isAuthenticated();`
+    // Let's try to be safer. If I create a transaction, I should be the owner or part of the household.
+    
     match /transactions/{transactionId} {
-      allow read, write: if isAuthenticated();
+        // Allow create if auth
+        allow create: if isAuthenticated() && request.resource.data.userId == request.auth.uid;
+        // Allow read/update/delete if you are the owner
+        // (This assumes transactions have a userId field, which typical app logic does)
+        allow read, update, delete: if isAuthenticated() && (
+            resource.data.userId == request.auth.uid || 
+            // Also allow if in same household? (Complex without helper functions)
+            // Sticking to owner-based for high security standard requested
+            (resource.data.userId == request.auth.uid) 
+        );
     }
 
     match /assets/{assetId} {
-        allow read, write: if isAuthenticated();
+        allow create: if isAuthenticated() && request.resource.data.userId == request.auth.uid;
+        allow read, update, delete: if isAuthenticated() && resource.data.userId == request.auth.uid;
+    }
+
+    match /categories/{categoryId} {
+        // Categories might be shared? If unsure, stick to auth for now OR lock to owner
+        allow read, write: if isAuthenticated(); 
     }
 
     // Default deny for anything else

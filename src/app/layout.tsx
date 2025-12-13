@@ -14,6 +14,7 @@ const geistMono = Geist_Mono({
 
 
 import { AuthProvider } from "@/features/auth/AuthContext";
+import { Toaster } from 'sonner';
 
 export const metadata: Metadata = {
   title: "Family Finance Manager",
@@ -33,6 +34,7 @@ export default function RootLayout({
       >
         <AuthProvider>
           {children}
+          <Toaster />
         </AuthProvider>
       </body>
     </html>

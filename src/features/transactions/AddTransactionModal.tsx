@@ -1,43 +1,13 @@
-'use client';
-
-import { useState, useEffect } from 'react';
-import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import * as z from 'zod';
+import { useState } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { useAuth } from '@/features/auth/AuthContext';
-import { addDoc, collection, serverTimestamp, Timestamp, updateDoc, doc } from 'firebase/firestore';
-import { db } from '@/lib/firebase';
-import { Loader2, Plus, Edit2 } from 'lucide-react';
+import { Loader2, Plus } from 'lucide-react';
 import { Transaction } from '@/types';
-
-const transactionSchema = z.object({
-    type: z.enum(['income', 'expense']),
-    amount: z.string().min(1, "Amount is required"),
-    currency: z.string(),
-    categoryId: z.string().min(1, "Category is required"),
-    description: z.string().min(1, "Description is required"),
-    date: z.string().min(1, "Date is required"),
-});
-
-type TransactionFormValues = z.infer<typeof transactionSchema>;
-
-const CATEGORIES = [
-    { id: 'cat-salary', name: 'Salary', type: 'income' },
-    { id: 'cat-rent', name: 'Rent', type: 'expense' },
-    { id: 'cat-food', name: 'Food & Groceries', type: 'expense' },
-    { id: 'cat-transport', name: 'Transport', type: 'expense' },
-    { id: 'cat-utilities', name: 'Utilities', type: 'expense' },
-    { id: 'cat-entertainment', name: 'Entertainment', type: 'expense' },
-    { id: 'cat-shopping', name: 'Shopping', type: 'expense' },
-    { id: 'cat-invest', name: 'Investments', type: 'expense' },
-    { id: 'cat-health', name: 'Health', type: 'expense' },
-    { id: 'cat-other', name: 'Other', type: 'expense' },
-];
+import { useAddTransaction } from './useAddTransaction';
+import { CATEGORIES } from '@/lib/constants';
 
 interface AddTransactionModalProps {
     transactionToEdit?: Transaction;
@@ -46,85 +16,13 @@ interface AddTransactionModalProps {
 }
 
 export function AddTransactionModal({ transactionToEdit, open: controlledOpen, onOpenChange }: AddTransactionModalProps) {
-    const { user, profile, household } = useAuth();
     const [internalOpen, setInternalOpen] = useState(false);
-    const [loading, setLoading] = useState(false);
 
     // Use controlled state if provided, otherwise local
     const isOpen = controlledOpen !== undefined ? controlledOpen : internalOpen;
     const setOpen = onOpenChange || setInternalOpen;
 
-    const form = useForm<TransactionFormValues>({
-        resolver: zodResolver(transactionSchema),
-        defaultValues: {
-            type: 'expense',
-            currency: household?.currency || 'USD',
-            date: new Date().toISOString().split('T')[0],
-            amount: '',
-            description: '',
-            categoryId: '',
-        },
-    });
-
-    // Reset form when editing changes
-    useEffect(() => {
-        if (transactionToEdit) {
-            form.reset({
-                type: transactionToEdit.type,
-                amount: transactionToEdit.amount.toString(),
-                currency: transactionToEdit.currency,
-                categoryId: transactionToEdit.categoryId,
-                description: transactionToEdit.description,
-                date: transactionToEdit.date.toDate().toISOString().split('T')[0]
-            });
-        } else {
-            form.reset({
-                type: 'expense',
-                currency: household?.currency || 'USD',
-                date: new Date().toISOString().split('T')[0],
-                amount: '',
-                description: '',
-                categoryId: '',
-            });
-        }
-    }, [transactionToEdit, form, isOpen, household?.currency]);
-
-    const onSubmit = async (data: TransactionFormValues) => {
-        if (!user || !profile?.householdId) return;
-
-        setLoading(true);
-        try {
-            const payload = {
-                type: data.type,
-                amount: parseFloat(data.amount),
-                currency: data.currency,
-                categoryId: data.categoryId,
-                categoryName: CATEGORIES.find(c => c.id === data.categoryId)?.name || 'Other',
-                description: data.description,
-                date: Timestamp.fromDate(new Date(data.date)),
-            };
-
-            if (transactionToEdit) {
-                await updateDoc(doc(db, 'transactions', transactionToEdit.id), payload);
-            } else {
-                await addDoc(collection(db, 'transactions'), {
-                    ...payload,
-                    householdId: profile.householdId,
-                    userId: user.uid,
-                    attachments: [],
-                    isRecurring: false,
-                    createdAt: serverTimestamp(),
-                });
-            }
-
-            setOpen(false);
-            if (!transactionToEdit) form.reset();
-        } catch (error) {
-            console.error("Error saving transaction:", error);
-        } finally {
-            setLoading(false);
-        }
-    };
+    const { form, loading, submitTransaction } = useAddTransaction(transactionToEdit, isOpen, setOpen);
 
     const selectedType = form.watch('type');
     const filteredCategories = CATEGORIES.filter(c => c.type === selectedType);
@@ -143,7 +41,7 @@ export function AddTransactionModal({ transactionToEdit, open: controlledOpen, o
                 <DialogHeader>
                     <DialogTitle>{transactionToEdit ? 'Edit Transaction' : 'Add New Transaction'}</DialogTitle>
                 </DialogHeader>
-                <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 pt-4">
+                <form onSubmit={form.handleSubmit(submitTransaction)} className="space-y-4 pt-4">
 
                     <div className="grid grid-cols-2 gap-4">
                         <div className="space-y-2">
@@ -191,32 +89,12 @@ export function AddTransactionModal({ transactionToEdit, open: controlledOpen, o
                         )}
                     </div>
 
-                    <div className="grid grid-cols-2 gap-4">
-                        <div className="space-y-2">
-                            <Label>Amount</Label>
-                            <Input type="number" step="0.01" placeholder="0.00" {...form.register('amount')} />
-                            {form.formState.errors.amount && (
-                                <p className="text-sm text-destructive">{form.formState.errors.amount.message}</p>
-                            )}
-                        </div>
-                        <div className="space-y-2">
-                            <Label>Currency</Label>
-                            <Select
-                                onValueChange={(val) => form.setValue('currency', val)}
-                                defaultValue="USD"
-                                value={form.watch('currency')}
-                            >
-                                <SelectTrigger>
-                                    <SelectValue placeholder="USD" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    <SelectItem value="USD">USD</SelectItem>
-                                    <SelectItem value="EUR">EUR</SelectItem>
-                                    <SelectItem value="LKR">LKR</SelectItem>
-                                    <SelectItem value="AED">AED</SelectItem>
-                                </SelectContent>
-                            </Select>
-                        </div>
+                    <div className="space-y-2">
+                        <Label>Amount</Label>
+                        <Input type="number" step="0.01" placeholder="0.00" {...form.register('amount')} />
+                        {form.formState.errors.amount && (
+                            <p className="text-sm text-destructive">{form.formState.errors.amount.message}</p>
+                        )}
                     </div>
 
                     <div className="space-y-2">
