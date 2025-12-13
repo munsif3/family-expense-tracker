@@ -28,7 +28,7 @@ export default function TransactionsPage() {
         <div className="max-w-4xl mx-auto space-y-6 pb-20 md:pb-0">
             <div className="flex items-center justify-between">
                 <div>
-                    <h1 className="text-3xl font-bold tracking-tight">Income & Expenses</h1>
+                    <h1 className="text-3xl font-bold tracking-tight">Transactions</h1>
                     <p className="text-muted-foreground mt-1">Manage your transaction history</p>
                 </div>
                 <Button onClick={() => setOpenAdd(true)} className="gap-2">
