@@ -4,7 +4,7 @@ import { where, orderBy, onSnapshot } from 'firebase/firestore';
 import { createSecureQuery } from '@/lib/firestoreUtils';
 import { Transaction } from '@/types';
 import { startOfMonth, endOfMonth, parseISO } from 'date-fns';
-import { toJsDate } from '@/utils/dateUtils';
+import { toJsDate } from '@/lib/utils';
 
 export interface GroupedCategory {
     category: string;

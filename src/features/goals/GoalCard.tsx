@@ -3,7 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { Button } from '@/components/ui/button';
 import { Pencil, Trash2, Trophy, AlertCircle } from 'lucide-react';
-import { formatCurrency } from '@/utils/formatters';
+import { formatCurrency } from '@/lib/utils';
 import { differenceInDays } from 'date-fns';
 
 interface GoalCardProps {

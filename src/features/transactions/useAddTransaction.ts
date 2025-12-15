@@ -15,6 +15,8 @@ const transactionSchema = z.object({
     date: z.string().min(1, "Date is required"),
     isRecurring: z.boolean().optional(),
     interval: z.enum(['weekly', 'monthly', 'yearly']).optional(),
+    spentBy: z.string().optional(),
+    isPersonal: z.boolean().optional(),
 });
 
 export type TransactionFormValues = z.infer<typeof transactionSchema>;
@@ -48,6 +50,8 @@ export function useAddTransaction(
                 categoryId: transactionToEdit.categoryId,
                 description: transactionToEdit.description,
                 date: transactionToEdit.date.toDate().toISOString().split('T')[0],
+                spentBy: transactionToEdit.spentBy,
+                isPersonal: transactionToEdit.isPersonal || false,
                 isRecurring: false, // Editing recurrence not supported in this modal yet
             });
         } else {
@@ -78,6 +82,8 @@ export function useAddTransaction(
                 categoryName: CATEGORIES.find(c => c.id === data.categoryId)?.name || 'Other',
                 description: data.description,
                 date: new Date(data.date),
+                spentBy: data.spentBy || user.uid, // Fallback to current user if missing
+                isPersonal: data.isPersonal || false,
             };
 
             if (transactionToEdit) {

@@ -4,7 +4,7 @@ import { collection, onSnapshot, addDoc, updateDoc, deleteDoc, doc, serverTimest
 import { db } from '@/lib/firebase';
 import { createSecureQuery } from '@/lib/firestoreUtils';
 import { FinancialGoal } from '@/types';
-import { toJsDate } from '@/utils/dateUtils';
+import { toJsDate } from '@/lib/utils';
 
 export function useGoals() {
     const { profile } = useAuth();

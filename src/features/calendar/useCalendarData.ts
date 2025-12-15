@@ -3,7 +3,7 @@ import { useAuth } from '@/features/auth/AuthContext';
 import { collection, query, where, getDocs, Timestamp, orderBy } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { createSecureQuery } from '@/lib/firestoreUtils';
-import { toJsDate } from '@/utils/dateUtils';
+import { toJsDate } from '@/lib/utils';
 import { Transaction } from '@/types';
 import { startOfMonth, endOfMonth, isSameDay } from 'date-fns';
 

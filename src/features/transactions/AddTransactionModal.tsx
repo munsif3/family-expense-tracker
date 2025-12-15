@@ -1,4 +1,7 @@
-// import { useState } from 'react'; -> Removed unused import
+import { useState, useEffect } from 'react';
+import { useAuth } from '@/features/auth/AuthContext';
+import { collection, query, where, getDocs } from 'firebase/firestore';
+import { db } from '@/lib/firebase';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -20,6 +23,25 @@ export function AddTransactionModal({ transactionToEdit, open, onOpenChange }: A
 
     const selectedType = form.watch('type');
     const filteredCategories = CATEGORIES.filter(c => c.type === selectedType);
+
+    // Fetch household members for "Spent By"
+    const { profile } = useAuth();
+    const [members, setMembers] = useState<any[]>([]);
+    useEffect(() => {
+        const fetchMembers = async () => {
+            if (profile?.householdId) {
+                try {
+                    const q = query(
+                        collection(db, 'users'),
+                        where('householdId', '==', profile.householdId)
+                    );
+                    const snapshot = await getDocs(q);
+                    setMembers(snapshot.docs.map(d => d.data()));
+                } catch (e) { console.error(e); }
+            }
+        };
+        fetchMembers();
+    }, [profile?.householdId]);
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
@@ -84,6 +106,38 @@ export function AddTransactionModal({ transactionToEdit, open, onOpenChange }: A
                     </div>
 
                     <div className="space-y-2">
+                        <Label>Spent By</Label>
+                        <Select
+                            onValueChange={(val) => form.setValue('spentBy', val)}
+                            value={form.watch('spentBy') || profile?.uid}
+                            defaultValue={profile?.uid}
+                        >
+                            <SelectTrigger>
+                                <SelectValue placeholder="Who spent this?" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                {members.map((m) => (
+                                    <SelectItem key={m.uid} value={m.uid}>
+                                        {m.displayName || m.email || 'Member'}
+                                    </SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
+                    </div>
+
+                    <div className="flex items-center space-x-2">
+                        <input
+                            type="checkbox"
+                            id="isPersonal"
+                            className="h-4 w-4 rounded border-gray-300"
+                            {...form.register('isPersonal')}
+                        />
+                        <Label htmlFor="isPersonal" className="font-normal cursor-pointer">
+                            This is a personal expense (not shared)
+                        </Label>
+                    </div>
+
+                    <div className="space-y-2">
                         <Label>Description</Label>
                         <Input placeholder="What was this for?" {...form.register('description')} />
                         {form.formState.errors.description && (
@@ -106,7 +160,7 @@ export function AddTransactionModal({ transactionToEdit, open, onOpenChange }: A
                                 />
                                 {form.watch('isRecurring') && (
                                     <Select
-                                        onValueChange={(val) => form.setValue('interval', val as any)}
+                                        onValueChange={(val) => form.setValue('interval', val as 'weekly' | 'monthly' | 'yearly')}
                                         value={form.watch('interval')}
                                     >
                                         <SelectTrigger className="w-[110px] h-8 text-xs">

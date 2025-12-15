@@ -10,6 +10,8 @@ export interface TransactionData {
     categoryName: string;
     description: string;
     date: Date;
+    spentBy?: string;
+    isPersonal?: boolean;
 }
 
 export const transactionService = {
@@ -19,6 +21,8 @@ export const transactionService = {
             date: Timestamp.fromDate(data.date),
             householdId,
             userId,
+            spentBy: data.spentBy || userId, // Default to creator if not specified
+            isPersonal: data.isPersonal || false,
             attachments: [],
             isRecurring: false,
             createdAt: serverTimestamp(),

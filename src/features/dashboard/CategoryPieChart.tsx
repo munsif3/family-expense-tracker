@@ -34,9 +34,9 @@ export function CategoryPieChart({ transactions, currency }: CategoryPieChartPro
                 <CardTitle>Spending by Category</CardTitle>
             </CardHeader>
             <CardContent>
-                <div className="h-[250px] w-full">
+                <div className="h-[250px] w-full min-w-0">
                     {data.length > 0 ? (
-                        <ResponsiveContainer width="100%" height="100%">
+                        <ResponsiveContainer width="100%" height="100%" debounce={1} minWidth={0}>
                             <PieChart>
                                 <Pie
                                     data={data}

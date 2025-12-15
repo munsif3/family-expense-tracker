@@ -8,6 +8,10 @@ import { formatCurrency } from '@/lib/utils';
 import { format } from 'date-fns';
 import { AddAssetModal } from '@/features/savings/AddAssetModal';
 import { useSavings, ASSET_ICONS } from '@/features/savings/useSavings';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { useAuth } from '@/features/auth/AuthContext';
+import { useMemo } from 'react';
+import { Asset } from '@/types';
 
 
 export default function SavingsPage() {
@@ -23,6 +27,42 @@ export default function SavingsPage() {
         setOpenAdd,
         membersMap
     } = useSavings();
+
+    const { user } = useAuth();
+    const [viewMode, setViewMode] = useState<'family' | 'personal'>('family');
+
+    const filteredAssets = useMemo(() => {
+        if (viewMode === 'family') return assets;
+        return assets.filter(a => {
+            // Check direct ownership or meta ownerIds
+            if (a.ownerIds && a.ownerIds.length > 0) return a.ownerIds.includes(user?.uid || '');
+            return a.ownerUserId === user?.uid;
+        });
+    }, [assets, viewMode, user]);
+
+    const displayedStats = useMemo(() => {
+        let totalInvested = 0;
+        let totalCurrent = 0;
+
+        filteredAssets.forEach(a => {
+            totalInvested += a.amountInvested;
+            totalCurrent += (a.currentValue || a.amountInvested);
+        });
+
+        const gain = totalCurrent - totalInvested;
+        const gainPercent = totalInvested > 0 ? (gain / totalInvested) * 100 : 0;
+
+        return { totalInvested, totalCurrent, gain, gainPercent };
+    }, [filteredAssets]);
+
+    const displayedGrouped = useMemo(() => {
+        const groups: Record<string, Asset[]> = {};
+        filteredAssets.forEach(a => {
+            if (!groups[a.type]) groups[a.type] = [];
+            groups[a.type].push(a);
+        });
+        return groups;
+    }, [filteredAssets]);
 
     if (loading) {
         return <div className="p-8 text-center text-muted-foreground">Loading savings...</div>;
@@ -41,6 +81,13 @@ export default function SavingsPage() {
                 </Button>
             </div>
 
+            <Tabs value={viewMode} onValueChange={(v) => setViewMode(v as 'family' | 'personal')} className="w-full">
+                <TabsList>
+                    <TabsTrigger value="family">Family Portfolio</TabsTrigger>
+                    <TabsTrigger value="personal">My Portfolio</TabsTrigger>
+                </TabsList>
+            </Tabs>
+
             {/* Summary Cards */}
             <div className="grid gap-4 md:grid-cols-3">
                 <Card>
@@ -49,7 +96,7 @@ export default function SavingsPage() {
                         <DollarSign className="h-4 w-4 text-muted-foreground" />
                     </CardHeader>
                     <CardContent>
-                        <div className="text-2xl font-bold">{formatCurrency(stats.totalCurrent, currency)}</div>
+                        <div className="text-2xl font-bold">{formatCurrency(displayedStats.totalCurrent, currency)}</div>
                     </CardContent>
                 </Card>
 
@@ -59,8 +106,8 @@ export default function SavingsPage() {
                         <TrendingUp className={`h-4 w-4 ${stats.gain >= 0 ? 'text-green-500' : 'text-red-500'}`} />
                     </CardHeader>
                     <CardContent>
-                        <div className={`text-2xl font-bold ${stats.gain >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                            {stats.gain >= 0 ? '+' : ''}{formatCurrency(stats.gain, currency)}
+                        <div className={`text-2xl font-bold ${displayedStats.gain >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                            {displayedStats.gain >= 0 ? '+' : ''}{formatCurrency(displayedStats.gain, currency)}
                         </div>
                     </CardContent>
                 </Card>
@@ -71,15 +118,15 @@ export default function SavingsPage() {
                         <TrendingUp className="h-4 w-4 text-muted-foreground" />
                     </CardHeader>
                     <CardContent>
-                        <div className={`text-2xl font-bold ${stats.gainPercent >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                            {stats.gainPercent >= 0 ? '+' : ''}{stats.gainPercent.toFixed(1)}%
+                        <div className={`text-2xl font-bold ${displayedStats.gainPercent >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                            {displayedStats.gainPercent >= 0 ? '+' : ''}{displayedStats.gainPercent.toFixed(1)}%
                         </div>
                     </CardContent>
                 </Card>
             </div>
 
             <div className="grid gap-6 md:grid-cols-2">
-                {Object.entries(grouped).map(([type, typeAssets]) => {
+                {Object.entries(displayedGrouped).map(([type, typeAssets]) => {
                     const TypeIcon = ASSET_ICONS[type] || DollarSign;
                     const typeTotal = typeAssets.reduce((sum, a) => sum + (a.currentValue || a.amountInvested), 0);
 
@@ -135,6 +182,12 @@ export default function SavingsPage() {
                                         </div>
                                         <div className="text-right">
                                             <p className="font-semibold">{formatCurrency(asset.currentValue || asset.amountInvested, currency)}</p>
+
+                                            {/* Invested Amount */}
+                                            <p className="text-xs text-muted-foreground">
+                                                Inv: {formatCurrency(asset.amountInvested, currency)}
+                                            </p>
+
                                             <p className={`text-xs ${(asset.currentValue || asset.amountInvested) >= asset.amountInvested ? 'text-green-600' : 'text-red-600'}`}>
                                                 {((asset.currentValue || asset.amountInvested) - asset.amountInvested) >= 0 ? '+' : ''}
                                                 {formatCurrency((asset.currentValue || asset.amountInvested) - asset.amountInvested, currency)}
@@ -160,6 +213,6 @@ export default function SavingsPage() {
                 }}
                 assetToEdit={assetToEdit || undefined}
             />
-        </div>
+        </div >
     );
 }

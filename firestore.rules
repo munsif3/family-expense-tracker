@@ -46,7 +46,11 @@ service cloud.firestore {
     // Transactions: Ensure user is the owner
     match /transactions/{transactionId} {
         allow create: if isAuthenticated() && request.resource.data.userId == request.auth.uid;
-        allow read, update, delete: if isAuthenticated() && resource.data.userId == request.auth.uid;
+        allow read: if isAuthenticated() && (
+          resource.data.userId == request.auth.uid || 
+          resource.data.householdId == get(/databases/$(database)/documents/users/$(request.auth.uid)).data.householdId
+        );
+        allow update, delete: if isAuthenticated() && resource.data.userId == request.auth.uid;
     }
 
     match /assets/{assetId} {

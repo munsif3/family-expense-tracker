@@ -1,4 +1,4 @@
-import { Timestamp } from 'firebase/firestore';
+import { Timestamp, FieldValue } from 'firebase/firestore';
 
 export type Role = 'admin' | 'user';
 
@@ -9,8 +9,23 @@ export interface UserProfile {
     photoURL: string | null;
     role: Role;
     householdId: string | null;
-    createdAt: Timestamp;
-    lastSeen: Timestamp;
+    createdAt: Timestamp | FieldValue;
+    lastSeen: Timestamp | FieldValue;
+}
+
+// ...
+
+export interface FinancialGoal {
+    id: string;
+    userId: string;
+    householdId: string;
+    name: string;
+    targetAmount: number;
+    currentAmount: number;
+    deadline?: Date;
+    color: string;
+    icon: string;
+    createdAt?: Timestamp | FieldValue;
 }
 
 export interface Household {
@@ -40,6 +55,8 @@ export interface Transaction {
     isRecurring: boolean;
     recurrenceRule?: string;
     attachments: Attachment[];
+    spentBy?: string; // userId of the person who spent the money
+    isPersonal?: boolean; // If true, this transaction is only for the spender
 }
 
 export interface RecurringTransaction {
@@ -55,18 +72,7 @@ export interface RecurringTransaction {
     createdAt: Timestamp;
 }
 
-export interface FinancialGoal {
-    id: string;
-    userId: string;
-    householdId: string;
-    name: string;
-    targetAmount: number;
-    currentAmount: number;
-    deadline?: Date;
-    color: string;
-    icon: string;
-    createdAt?: any;
-}
+
 
 export interface Attachment {
     id: string;
@@ -91,7 +97,7 @@ export interface Asset {
     id: string;
     householdId: string;
     ownerUserId: string;
-    type: 'Gold' | 'FD' | 'MonthlySaving' | 'Property' | 'Stock' | 'Crypto' | 'Jewellery';
+    type: 'Gold' | 'FD' | 'MonthlySaving' | 'Property' | 'Stock' | 'Crypto' | 'Jewellery' | 'Bank';
     name: string;
     amountInvested: number;
     currentValue?: number;

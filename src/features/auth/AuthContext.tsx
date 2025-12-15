@@ -79,8 +79,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
                             photoURL: firebaseUser.photoURL,
                             role: 'user',
                             householdId: null,
-                            createdAt: serverTimestamp() as any,
-                            lastSeen: serverTimestamp() as any,
+                            createdAt: serverTimestamp(),
+                            lastSeen: serverTimestamp(),
                         };
                         try {
                             await setDoc(userRef, newProfile);

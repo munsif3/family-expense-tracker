@@ -27,5 +27,6 @@ export const ASSET_TYPES = [
     { value: 'Property', label: 'Real Estate' },
     { value: 'Crypto', label: 'Crypto' },
     { value: 'Jewellery', label: 'Jewellery' },
-    { value: 'MonthlySaving', label: 'Monthly Savings' }
+    { value: 'MonthlySaving', label: 'Monthly Savings' },
+    { value: 'Bank', label: 'Bank Account' }
 ];

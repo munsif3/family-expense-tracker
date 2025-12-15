@@ -59,7 +59,7 @@ export function OnboardingFlow() {
                     </CardDescription>
                 </CardHeader>
                 <CardContent>
-                    <form onSubmit={form.handleSubmit(onSubmit as any)} className="space-y-4">
+                    <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
                         <div className="space-y-2">
                             <Label htmlFor="householdName">Family/Household Name</Label>
                             <Input

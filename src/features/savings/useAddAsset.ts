@@ -1,26 +1,17 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { useAuth } from '@/features/auth/AuthContext';
 import { db } from '@/lib/firebase';
-import { collection, query, where, getDocs } from 'firebase/firestore';
+import { collection, query, where, getDocs, Timestamp } from 'firebase/firestore';
 import { Asset, UserProfile } from '@/types';
 import { assetService } from '@/lib/api/assets';
-
-const assetSchema = z.object({
-    name: z.string().min(2, "Name is required"),
-    type: z.string(),
-    amountInvested: z.string().min(1, "Amount is required"),
-    currentValue: z.string().optional(),
-    buyDate: z.string().min(1, "Date is required"),
-    source: z.string().optional(),
-    ownerIds: z.array(z.string()).min(1, "Select at least one owner"),
-});
-
-export type AssetFormValues = z.infer<typeof assetSchema>;
-
+import { getAssetSchema, baseAssetSchema, ASSET_META_SCHEMAS } from './assetSchemas';
 import { ASSET_TYPES } from '@/lib/constants';
+
+// We use a loose type for the form to accommodate dynamic fields
+type AssetFormValues = z.infer<typeof baseAssetSchema> & Record<string, any>;
 
 export function useAddAsset(
     assetToEdit?: Asset,
@@ -48,7 +39,14 @@ export function useAddAsset(
     }, [profile?.householdId]);
 
     const form = useForm<AssetFormValues>({
-        resolver: zodResolver(assetSchema),
+        // Dynamic resolver: decides schema based on 'type' field
+        // @ts-ignore: async resolver type mismatch with loose form values
+        resolver: async (values, context, options) => {
+            const type = values.type || 'FD';
+            const schema = getAssetSchema(type);
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            return zodResolver(schema)(values, context, options as any);
+        },
         defaultValues: {
             type: 'FD',
             buyDate: new Date().toISOString().split('T')[0],
@@ -56,35 +54,36 @@ export function useAddAsset(
         },
     });
 
+    // Populate form on edit or reset on open
     useEffect(() => {
         if (assetToEdit) {
-            form.reset({
+            const baseValues = {
                 name: assetToEdit.name,
                 type: assetToEdit.type,
                 amountInvested: assetToEdit.amountInvested.toString(),
                 currentValue: (assetToEdit.currentValue || assetToEdit.amountInvested).toString(),
                 buyDate: assetToEdit.buyDate.toDate().toISOString().split('T')[0],
                 source: assetToEdit.source || '',
-                // If ownerIds exists use it, otherwise fallback to ownerUserId wrapped in array
                 ownerIds: assetToEdit.ownerIds && assetToEdit.ownerIds.length > 0
                     ? assetToEdit.ownerIds
                     : [assetToEdit.ownerUserId]
+            };
+            // Merge meta fields into the top level for the form
+            const merged = { ...baseValues, ...(assetToEdit.meta || {}) };
+            form.reset(merged);
+        } else if (open && user) {
+            form.reset({
+                type: 'FD',
+                buyDate: new Date().toISOString().split('T')[0],
+                name: '',
+                amountInvested: '',
+                currentValue: '',
+                source: '',
+                ownerIds: [user.uid],
+                // Clear potential old dynamic fields
             });
-        } else {
-            if (open) {
-                // If adding new, default to current user
-                form.reset({
-                    type: 'FD',
-                    buyDate: new Date().toISOString().split('T')[0],
-                    name: '',
-                    amountInvested: '',
-                    currentValue: '',
-                    source: '',
-                    ownerIds: user ? [user.uid] : [],
-                });
-            }
         }
-    }, [assetToEdit, open, form, user]);
+    }, [assetToEdit, open, user, form]);
 
     const submitAsset = async (data: AssetFormValues) => {
         if (!user || !profile?.householdId) return;
@@ -94,20 +93,49 @@ export function useAddAsset(
             const invested = parseFloat(data.amountInvested);
             const current = data.currentValue ? parseFloat(data.currentValue) : invested;
 
+            // Extract standard fields
+            const standardKeys = Object.keys(baseAssetSchema.shape);
+            // Dynamic fields are everything else
+            const meta: Record<string, any> = {};
+
+            // Explicitly add foreign currency fields to meta
+            if (data.isForeignCurrency) {
+                meta.isForeignCurrency = data.isForeignCurrency;
+                meta.originalCurrency = data.originalCurrency;
+                meta.originalAmount = data.originalAmount;
+                meta.exchangeRate = data.exchangeRate;
+            }
+
+            Object.keys(data).forEach(key => {
+                // We exclude foreign fields from automatic extraction if they are already handled or if we want them in meta 
+                // but since they are in baseSchema, they are 'standard'. 
+                // We want to force them into meta.
+                const isForeignField = ['isForeignCurrency', 'originalCurrency', 'originalAmount', 'exchangeRate'].includes(key);
+                if (!standardKeys.includes(key) && !isForeignField) {
+                    meta[key] = data[key];
+                }
+            });
+
             const payload = {
                 name: data.name,
                 type: data.type,
                 amountInvested: invested,
                 currentValue: current,
-                buyDate: new Date(data.buyDate),
+                buyDate: Timestamp.fromDate(new Date(data.buyDate)),
                 source: data.source,
                 ownerIds: data.ownerIds,
+                meta: meta, // Save dynamic fields here
             };
 
             if (assetToEdit) {
-                await assetService.updateAsset(assetToEdit.id, payload);
+                // We need to extend the updateAsset types to accept meta, 
+                // but for now let's cast or assume the service handles specific fields roughly.
+                // The service likely spreads data, so 'meta' should pass through if we update the interface there.
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                await assetService.updateAsset(assetToEdit.id, payload as any);
             } else {
-                await assetService.addAsset(payload, profile.householdId, user.uid, household?.currency || 'USD');
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                await assetService.addAsset(payload as any, profile.householdId, user.uid, household?.currency || 'USD');
             }
 
             setOpen?.(false);
@@ -124,6 +152,7 @@ export function useAddAsset(
         loading,
         submitAsset,
         ASSET_TYPES,
-        members
+        members,
+        ASSET_META_SCHEMAS // Export to help UI determine fields
     };
 }

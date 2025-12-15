@@ -15,6 +15,8 @@ export function useTransactionsList() {
     const [search, setSearch] = useState('');
     const [categoryFilter, setCategoryFilter] = useState('all');
 
+    const [viewMode, setViewMode] = useState<'family' | 'personal'>('family');
+
     // Fetch
     useEffect(() => {
         if (!profile?.householdId) return;
@@ -23,7 +25,7 @@ export function useTransactionsList() {
         const q = createSecureQuery({
             collectionName: 'transactions',
             householdId: profile.householdId,
-            userId: profile.uid,
+            // userId: profile.uid, // Omitted to fetch ALL household transactions
             constraints: [
                 orderBy('date', 'desc'),
                 limit(100)
@@ -46,6 +48,16 @@ export function useTransactionsList() {
     useEffect(() => {
         let result = transactions;
 
+        // View Mode Filter
+        if (viewMode === 'family') {
+            result = result.filter(t => !t.isPersonal);
+        } else {
+            // Personal: Only show my personal expenses
+            // Note: If functionality to see *other's* personal expenses is needed, this logic might change.
+            // But usually "Personal" tab means "My Personal Stuff".
+            result = result.filter(t => t.isPersonal && t.spentBy === profile?.uid);
+        }
+
         if (search) {
             const lower = search.toLowerCase();
             result = result.filter(t =>
@@ -59,7 +71,7 @@ export function useTransactionsList() {
         }
 
         setFiltered(result);
-    }, [search, categoryFilter, transactions]);
+    }, [search, categoryFilter, transactions, viewMode, profile?.uid]);
 
     // Derive unique categories for filter
     const categories = Array.from(new Set(transactions.map(t => t.categoryName || 'Other'))).sort();
@@ -72,6 +84,8 @@ export function useTransactionsList() {
         setSearch,
         categoryFilter,
         setCategoryFilter,
-        categories
+        categories,
+        viewMode,
+        setViewMode
     };
 }

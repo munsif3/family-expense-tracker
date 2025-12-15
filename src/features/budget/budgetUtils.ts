@@ -1,6 +1,6 @@
 import { Transaction, Category } from '@/types';
 import { getYear, getMonth } from 'date-fns';
-import { toJsDate } from '@/utils/dateUtils';
+import { toJsDate } from '@/lib/utils';
 
 export interface BudgetStatusItem {
     name: string;

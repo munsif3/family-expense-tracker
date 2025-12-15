@@ -34,7 +34,7 @@ export function CashflowChart({ transactions, currency }: CashflowChartProps) {
             </CardHeader>
             <CardContent>
                 <div className="h-[250px] w-full min-w-0">
-                    <ResponsiveContainer width="100%" height="100%">
+                    <ResponsiveContainer width="100%" height="100%" debounce={1} minWidth={0}>
                         <BarChart layout="vertical" data={data} margin={{ top: 0, right: 30, left: 20, bottom: 0 }}>
                             <defs>
                                 <linearGradient id="incomeGradient" x1="0" y1="0" x2="1" y2="0">

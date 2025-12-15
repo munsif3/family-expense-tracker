@@ -2,9 +2,9 @@ import { useState, useEffect, useMemo } from 'react';
 import { useAuth } from '@/features/auth/AuthContext';
 import { collection, query, where, onSnapshot, deleteDoc, doc, getDocs } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
-import { createSecureQuery } from '@/lib/firestoreUtils';
 import { Asset, UserProfile } from '@/types';
-import { Landmark, Gem, TrendingUp, Building2, Bitcoin, Wallet, LucideIcon } from 'lucide-react';
+import { ASSET_TYPES } from '@/lib/constants';
+import { Building2, Coins, Gem, Landmark, PieChart, TrendingUp, Wallet, Bitcoin, LucideIcon } from 'lucide-react';
 
 export const ASSET_ICONS: Record<string, LucideIcon> = {
     'FD': Landmark,
@@ -13,7 +13,8 @@ export const ASSET_ICONS: Record<string, LucideIcon> = {
     'Stock': TrendingUp,
     'Property': Building2,
     'Crypto': Bitcoin,
-    'MonthlySaving': Wallet
+    'MonthlySaving': Wallet,
+    'Bank': Landmark
 };
 
 export function useSavings() {
@@ -48,11 +49,10 @@ export function useSavings() {
     useEffect(() => {
         if (!profile?.householdId) return;
 
-        const q = createSecureQuery({
-            collectionName: 'assets',
-            householdId: profile.householdId,
-            userId: profile.uid
-        });
+        const q = query(
+            collection(db, 'assets'),
+            where('householdId', '==', profile.householdId)
+        );
 
         const unsubscribe = onSnapshot(q, (snapshot) => {
             const data = snapshot.docs.map(doc => ({

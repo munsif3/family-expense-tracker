@@ -4,25 +4,29 @@ import { db } from '@/lib/firebase';
 interface SecureQueryOptions {
     collectionName: string;
     householdId: string | undefined;
-    userId: string | undefined;
+    userId?: string; // Optional: Provide only if you want to restrict to a specific user
     constraints?: QueryConstraint[];
 }
 
 /**
- * Creates a Firestore query that enforces security rules by automatically 
- * applying 'householdId' and 'userId' filters.
- * 
- * @throws Error if householdId or userId is missing.
+ * Creates a Firestore query that guarantees household isolation.
+ * Optionally filters by userId if provided.
  */
 export function createSecureQuery({ collectionName, householdId, userId, constraints = [] }: SecureQueryOptions) {
-    if (!householdId || !userId) {
-        throw new Error("Secure query requires both householdId and userId to ensure data isolation.");
+    if (!householdId) {
+        throw new Error("Secure query requires householdId to ensure data isolation.");
+    }
+
+    const baseConstraints = [where('householdId', '==', householdId)];
+
+    // Only add userId filter if strictly requested
+    if (userId) {
+        baseConstraints.push(where('userId', '==', userId));
     }
 
     return query(
         collection(db, collectionName),
-        where('householdId', '==', householdId),
-        where('userId', '==', userId),
+        ...baseConstraints,
         ...constraints
     );
 }
