@@ -57,7 +57,7 @@ export function TrendChart({ transactions, currency }: TrendChartProps) {
                                 <XAxis dataKey="date" tick={{ fontSize: 12 }} axisLine={false} tickLine={false} minTickGap={30} />
                                 <YAxis hide />
                                 <Tooltip
-                                    formatter={(value: number) => formatCurrency(value, currency)}
+                                    formatter={(value: any) => formatCurrency(value, currency)}
                                     contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }}
                                 />
                                 <Area type="monotone" dataKey="amount" stroke="#10b981" fillOpacity={1} fill="url(#colorAmount)" />

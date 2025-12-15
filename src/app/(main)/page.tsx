@@ -55,7 +55,7 @@ export default function DashboardPage() {
                     <h2 className="text-3xl font-bold tracking-tight">Dashboard</h2>
                     <p className="text-muted-foreground mt-1">Overview of your family finances</p>
                 </div>
-                <Tabs value={viewMode} onValueChange={(v) => setViewMode(v as 'family' | 'personal')}>
+                <Tabs value={viewMode} onValueChange={(v: string) => setViewMode(v as 'family' | 'personal')}>
                     <TabsList>
                         <Tooltip content="All household transactions excluding personal expenses." side="bottom">
                             <TabsTrigger value="family">Family View</TabsTrigger>
@@ -150,3 +150,4 @@ export default function DashboardPage() {
         </div>
     );
 }
+// Force rebuild

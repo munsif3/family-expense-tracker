@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { Calendar } from '@/components/ui/calendar';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { useCalendarData } from '@/features/calendar/useCalendarData';
 import { Loader2, ArrowUp, ArrowDown } from 'lucide-react';
 import { formatCurrency } from '@/lib/utils';

@@ -50,3 +50,6 @@ build_log.txt
 
 # firebase
 .firebase/
+
+
+lint_output.txt

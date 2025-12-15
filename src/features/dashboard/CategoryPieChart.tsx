@@ -53,7 +53,7 @@ export function CategoryPieChart({ transactions, currency }: CategoryPieChartPro
                                     ))}
                                 </Pie>
                                 <Tooltip
-                                    formatter={(value: number) => formatCurrency(value, currency)}
+                                    formatter={(value: any) => formatCurrency(value, currency)}
                                     contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)' }}
                                 />
                                 <Legend

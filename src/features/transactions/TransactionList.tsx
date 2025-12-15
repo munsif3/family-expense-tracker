@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { Transaction } from '@/types';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 
-import { ArrowDownLeft, ArrowUpRight, Calendar, Tag, MoreHorizontal, Edit2, Trash2, Ban } from 'lucide-react';
+import { ArrowDownLeft, ArrowUpRight, Calendar, Tag, MoreHorizontal, Edit2, Trash2 } from 'lucide-react';
 import { cn, formatCurrency } from '@/lib/utils';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Button } from '@/components/ui/button';
@@ -62,7 +62,7 @@ export function TransactionList({ transactions, loading, compact }: TransactionL
                     )}>
 
 
-                        // ... (inside component)
+
                         {Object.entries(groupTransactionsByDate(transactions)).map(([date, txs]) => (
                             <div key={date} className="space-y-3">
                                 <h3 className="text-sm font-medium text-muted-foreground sticky top-0 bg-card py-2 z-10">{date}</h3>

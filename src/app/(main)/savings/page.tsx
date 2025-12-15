@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Plus, TrendingUp, DollarSign, Users } from 'lucide-react';
@@ -10,7 +10,7 @@ import { AddAssetModal } from '@/features/savings/AddAssetModal';
 import { useSavings, ASSET_ICONS } from '@/features/savings/useSavings';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useAuth } from '@/features/auth/AuthContext';
-import { useMemo } from 'react';
+
 import { Asset } from '@/types';
 
 
@@ -81,7 +81,7 @@ export default function SavingsPage() {
                 </Button>
             </div>
 
-            <Tabs value={viewMode} onValueChange={(v) => setViewMode(v as 'family' | 'personal')} className="w-full">
+            <Tabs value={viewMode} onValueChange={(v: string) => setViewMode(v as 'family' | 'personal')} className="w-full">
                 <TabsList>
                     <TabsTrigger value="family">Family Portfolio</TabsTrigger>
                     <TabsTrigger value="personal">My Portfolio</TabsTrigger>

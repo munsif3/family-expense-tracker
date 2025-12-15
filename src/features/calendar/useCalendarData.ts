@@ -5,7 +5,7 @@ import { db } from '@/lib/firebase';
 import { createSecureQuery } from '@/lib/firestoreUtils';
 import { toJsDate } from '@/lib/utils';
 import { Transaction } from '@/types';
-import { startOfMonth, endOfMonth, isSameDay } from 'date-fns';
+import { startOfMonth, endOfMonth } from 'date-fns';
 
 export interface DailyData {
     date: Date;

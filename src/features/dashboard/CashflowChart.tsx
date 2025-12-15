@@ -51,7 +51,7 @@ export function CashflowChart({ transactions, currency }: CashflowChartProps) {
                             <Tooltip
                                 cursor={{ fill: 'transparent' }}
                                 contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)' }}
-                                formatter={(value: number) => [formatCurrency(value, currency), 'Amount']}
+                                formatter={(value: any) => [formatCurrency(value, currency), 'Amount']}
                             />
                             <Bar dataKey="amount" radius={[0, 8, 8, 0]} barSize={40}>
                                 {data.map((entry, index) => (

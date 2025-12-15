@@ -2,7 +2,7 @@
 
 import { useGoals } from '@/features/goals/useGoals';
 import { useAuth } from '@/features/auth/AuthContext';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Card, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Plus } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -21,6 +21,7 @@ export default function GoalsPage() {
 
     const currency = household?.currency || 'USD';
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const handleSave = async (data: any) => {
         try {
             if (editingGoal) {
