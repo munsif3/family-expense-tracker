@@ -101,4 +101,6 @@ export interface Asset {
     isEncrypted: boolean; // If true, sensitive fields like photos/notes are client-side encrypted
     attachments: Attachment[];
     meta: Record<string, any>; // Flexible for different asset types (gold weight, karat, etc)
+    source?: string;
+    ownerIds?: string[]; // Multiple owners support
 }

@@ -3,7 +3,9 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { useAuth } from '@/features/auth/AuthContext';
-import { Asset } from '@/types';
+import { db } from '@/lib/firebase';
+import { collection, query, where, getDocs } from 'firebase/firestore';
+import { Asset, UserProfile } from '@/types';
 import { assetService } from '@/lib/api/assets';
 
 const assetSchema = z.object({
@@ -12,6 +14,8 @@ const assetSchema = z.object({
     amountInvested: z.string().min(1, "Amount is required"),
     currentValue: z.string().optional(),
     buyDate: z.string().min(1, "Date is required"),
+    source: z.string().optional(),
+    ownerIds: z.array(z.string()).min(1, "Select at least one owner"),
 });
 
 export type AssetFormValues = z.infer<typeof assetSchema>;
@@ -25,12 +29,30 @@ export function useAddAsset(
 ) {
     const { user, profile, household } = useAuth();
     const [loading, setLoading] = useState(false);
+    const [members, setMembers] = useState<UserProfile[]>([]);
+
+    useEffect(() => {
+        const fetchMembers = async () => {
+            if (profile?.householdId) {
+                try {
+                    const q = query(collection(db, 'users'), where('householdId', '==', profile.householdId));
+                    const snapshot = await getDocs(q);
+                    const fetchedMembers = snapshot.docs.map(d => d.data() as UserProfile);
+                    setMembers(fetchedMembers);
+                } catch (err) {
+                    console.error("Error fetching members", err);
+                }
+            }
+        };
+        fetchMembers();
+    }, [profile?.householdId]);
 
     const form = useForm<AssetFormValues>({
         resolver: zodResolver(assetSchema),
         defaultValues: {
             type: 'FD',
             buyDate: new Date().toISOString().split('T')[0],
+            ownerIds: [],
         },
     });
 
@@ -41,20 +63,28 @@ export function useAddAsset(
                 type: assetToEdit.type,
                 amountInvested: assetToEdit.amountInvested.toString(),
                 currentValue: (assetToEdit.currentValue || assetToEdit.amountInvested).toString(),
-                buyDate: assetToEdit.buyDate.toDate().toISOString().split('T')[0]
+                buyDate: assetToEdit.buyDate.toDate().toISOString().split('T')[0],
+                source: assetToEdit.source || '',
+                // If ownerIds exists use it, otherwise fallback to ownerUserId wrapped in array
+                ownerIds: assetToEdit.ownerIds && assetToEdit.ownerIds.length > 0
+                    ? assetToEdit.ownerIds
+                    : [assetToEdit.ownerUserId]
             });
         } else {
             if (open) {
+                // If adding new, default to current user
                 form.reset({
                     type: 'FD',
                     buyDate: new Date().toISOString().split('T')[0],
                     name: '',
                     amountInvested: '',
                     currentValue: '',
+                    source: '',
+                    ownerIds: user ? [user.uid] : [],
                 });
             }
         }
-    }, [assetToEdit, open, form]);
+    }, [assetToEdit, open, form, user]);
 
     const submitAsset = async (data: AssetFormValues) => {
         if (!user || !profile?.householdId) return;
@@ -70,6 +100,8 @@ export function useAddAsset(
                 amountInvested: invested,
                 currentValue: current,
                 buyDate: new Date(data.buyDate),
+                source: data.source,
+                ownerIds: data.ownerIds,
             };
 
             if (assetToEdit) {
@@ -91,6 +123,7 @@ export function useAddAsset(
         form,
         loading,
         submitAsset,
-        ASSET_TYPES
+        ASSET_TYPES,
+        members
     };
 }

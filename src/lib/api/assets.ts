@@ -8,6 +8,8 @@ export interface AssetData {
     amountInvested: number;
     currentValue: number;
     buyDate: Date;
+    source?: string;
+    ownerIds?: string[];
 }
 
 export const assetService = {
@@ -16,7 +18,7 @@ export const assetService = {
             ...data,
             buyDate: Timestamp.fromDate(data.buyDate),
             householdId,
-            ownerUserId: userId,
+            ownerUserId: userId, // Default owner (creator) or primary owner
             currency,
             isEncrypted: false,
             attachments: [],

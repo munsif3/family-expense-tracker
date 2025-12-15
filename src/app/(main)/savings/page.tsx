@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Plus, TrendingUp, DollarSign } from 'lucide-react';
+import { Plus, TrendingUp, DollarSign, Users } from 'lucide-react';
 import { formatCurrency } from '@/lib/utils';
 import { format } from 'date-fns';
 import { AddAssetModal } from '@/features/savings/AddAssetModal';
@@ -20,7 +20,8 @@ export default function SavingsPage() {
         assetToEdit,
         setAssetToEdit,
         openAdd,
-        setOpenAdd
+        setOpenAdd,
+        membersMap
     } = useSavings();
 
     if (loading) {
@@ -108,7 +109,29 @@ export default function SavingsPage() {
                                             <p className="font-medium">{asset.name}</p>
                                             <div className="flex items-center gap-2 text-xs text-muted-foreground mt-0.5">
                                                 <span>{format(asset.buyDate.toDate(), 'MMM d, yyyy')}</span>
+                                                {(() => {
+                                                    const ids = (asset.ownerIds && asset.ownerIds.length > 0)
+                                                        ? asset.ownerIds
+                                                        : (asset.ownerUserId ? [asset.ownerUserId] : []);
+
+                                                    if (ids.length === 0) return null;
+
+                                                    return (
+                                                        <>
+                                                            <span>•</span>
+                                                            <span className="flex items-center gap-1">
+                                                                <Users className="h-3 w-3" />
+                                                                {ids.map(id => membersMap[id] || 'Unknown').join(', ')}
+                                                            </span>
+                                                        </>
+                                                    );
+                                                })()}
                                             </div>
+                                            {asset.source && (
+                                                <div className="text-xs text-muted-foreground mt-0.5 italic pl-0">
+                                                    Source: {asset.source}
+                                                </div>
+                                            )}
                                         </div>
                                         <div className="text-right">
                                             <p className="font-semibold">{formatCurrency(asset.currentValue || asset.amountInvested, currency)}</p>

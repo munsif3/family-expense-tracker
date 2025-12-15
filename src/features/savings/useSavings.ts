@@ -1,9 +1,9 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useAuth } from '@/features/auth/AuthContext';
-import { collection, query, where, onSnapshot, deleteDoc, doc } from 'firebase/firestore';
+import { collection, query, where, onSnapshot, deleteDoc, doc, getDocs } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { createSecureQuery } from '@/lib/firestoreUtils';
-import { Asset } from '@/types';
+import { Asset, UserProfile } from '@/types';
 import { Landmark, Gem, TrendingUp, Building2, Bitcoin, Wallet, LucideIcon } from 'lucide-react';
 
 export const ASSET_ICONS: Record<string, LucideIcon> = {
@@ -23,6 +23,27 @@ export function useSavings() {
     const currency = household?.currency || 'USD';
     const [editingAsset, setEditingAsset] = useState<Asset | null>(null);
     const [deletingAsset, setDeletingAsset] = useState<Asset | null>(null);
+    const [membersMap, setMembersMap] = useState<Record<string, string>>({});
+
+    useEffect(() => {
+        const fetchMembers = async () => {
+            if (profile?.householdId) {
+                try {
+                    const q = query(collection(db, 'users'), where('householdId', '==', profile.householdId));
+                    const snapshot = await getDocs(q);
+                    const map: Record<string, string> = {};
+                    snapshot.docs.forEach(d => {
+                        const u = d.data() as UserProfile;
+                        map[u.uid] = u.displayName || u.email || 'Unknown';
+                    });
+                    setMembersMap(map);
+                } catch (err) {
+                    console.error("Error fetching members", err);
+                }
+            }
+        };
+        fetchMembers();
+    }, [profile?.householdId]);
 
     useEffect(() => {
         if (!profile?.householdId) return;
@@ -91,6 +112,7 @@ export function useSavings() {
         deletingAsset,
         setDeletingAsset,
         handleDelete,
-        ASSET_ICONS
+        ASSET_ICONS,
+        membersMap
     };
 }
