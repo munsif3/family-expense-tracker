@@ -2,6 +2,8 @@ import { Timestamp, FieldValue } from 'firebase/firestore';
 
 export type Role = 'admin' | 'user';
 
+export * from '../features/trips/types';
+
 export interface UserProfile {
     uid: string;
     email: string | null;

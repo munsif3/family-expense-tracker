@@ -19,6 +19,20 @@
             ]
         },
         {
+            "collectionGroup": "transactions",
+            "queryScope": "COLLECTION",
+            "fields": [
+                {
+                    "fieldPath": "householdId",
+                    "order": "ASCENDING"
+                },
+                {
+                    "fieldPath": "date",
+                    "order": "DESCENDING"
+                }
+            ]
+        },
+        {
             "collectionGroup": "recurring_transactions",
             "queryScope": "COLLECTION",
             "fields": [
@@ -65,6 +79,20 @@
                 {
                     "fieldPath": "deadline",
                     "order": "ASCENDING"
+                }
+            ]
+        },
+        {
+            "collectionGroup": "trips",
+            "queryScope": "COLLECTION",
+            "fields": [
+                {
+                    "fieldPath": "participantIds",
+                    "arrayConfig": "CONTAINS"
+                },
+                {
+                    "fieldPath": "startDate",
+                    "order": "DESCENDING"
                 }
             ]
         }

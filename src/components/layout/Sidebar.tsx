@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { LayoutDashboard, Receipt, PiggyBank, PieChart, Lock, LogOut, Wallet, Settings, CalendarClock, Calendar, Trophy, FileText } from 'lucide-react';
+import { LayoutDashboard, Receipt, PiggyBank, PieChart, Lock, LogOut, Wallet, Settings, CalendarClock, Calendar, Trophy, FileText, Plane } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/features/auth/AuthContext';
@@ -11,6 +11,7 @@ import { signOut } from 'firebase/auth';
 
 const NAV_ITEMS = [
     { name: 'Dashboard', href: '/', icon: LayoutDashboard },
+    { name: 'Trips', href: '/trips', icon: Plane },
     { name: 'Transactions', href: '/transactions', icon: Receipt },
     { name: 'Savings', href: '/savings', icon: PiggyBank },
     { name: 'Budget', href: '/budget', icon: PieChart },

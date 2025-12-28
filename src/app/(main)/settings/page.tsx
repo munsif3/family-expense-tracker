@@ -8,7 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { LogOut, AlertCircle, Home, User, ShieldAlert } from 'lucide-react';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { doc, updateDoc, arrayRemove, getDoc } from 'firebase/firestore';
+import { doc, updateDoc, arrayRemove, getDoc, collection, query, where, getDocs, writeBatch } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { useRouter } from 'next/navigation';
 
@@ -16,9 +16,15 @@ export default function SettingsPage() {
     const { user, profile } = useAuth();
     const router = useRouter();
     const [loading, setLoading] = useState(false);
+    // State for Leave Household
     const [showLeaveDialog, setShowLeaveDialog] = useState(false);
     const [householdName, setHouseholdName] = useState<string>('');
     const [currency, setCurrency] = useState<string>('USD');
+
+    // State for Delete Data
+    const [showDeleteDataDialog, setShowDeleteDataDialog] = useState(false);
+    const [deleteConfirmation, setDeleteConfirmation] = useState('');
+    const [deleteLoading, setDeleteLoading] = useState(false);
 
     // Fetch household name when profile loads
     useEffect(() => {
@@ -48,7 +54,6 @@ export default function SettingsPage() {
 
         try {
             // 1. Remove user from household members
-            // We wrap this in a try-catch to allow "force leaving" if permissions are already broken
             try {
                 const householdRef = doc(db, 'households', profile.householdId);
                 await updateDoc(householdRef, {
@@ -56,7 +61,6 @@ export default function SettingsPage() {
                 });
             } catch (innerError) {
                 console.warn("Could not remove from household members (likely already removed or permission denied):", innerError);
-                // Proceed to step 2 anyway
             }
 
             // 2. Clear householdId from user profile
@@ -66,13 +70,75 @@ export default function SettingsPage() {
                 role: 'user'
             });
 
-            // NOTE: No need to reload. AuthContext onSnapshot will catch the profile change
-            // and DashboardLayout will redirect to OnboardingFlow automatically.
-
         } catch (error) {
             console.error("Error leaving household:", error);
             setLoading(false);
             setShowLeaveDialog(false);
+        }
+    };
+
+    const handleDeleteAllData = async () => {
+        if (!user || !profile?.householdId) return;
+
+        // Security check
+        if (deleteConfirmation !== 'DELETE') {
+            return;
+        }
+
+        setDeleteLoading(true);
+
+        try {
+            const hId = profile.householdId;
+            const batchSize = 400; // Safety margin below 500 limit
+
+            // Helper to delete query results in batches
+            const deleteQueryBatch = async (collectionName: string, qConstraint: any) => {
+                const q = query(collection(db, collectionName), ...qConstraint);
+                const snapshot = await getDocs(q);
+
+                if (snapshot.size === 0) return;
+
+                const batch = writeBatch(db);
+                snapshot.docs.forEach((doc) => {
+                    batch.delete(doc.ref);
+                });
+                await batch.commit();
+                console.log(`Deleted ${snapshot.size} docs from ${collectionName}`);
+            };
+
+            // 1. Transactions
+            await deleteQueryBatch('transactions', [where('householdId', '==', hId)]);
+
+            // 2. Recurring Transactions
+            await deleteQueryBatch('recurring_transactions', [where('householdId', '==', hId)]);
+
+            // 3. Budgets (Categories)
+            await deleteQueryBatch('categories', [where('householdId', '==', hId)]);
+
+            // 4. Assets / Savings
+            await deleteQueryBatch('assets', [where('householdId', '==', hId)]);
+
+            // 5. Goals
+            await deleteQueryBatch('goals', [where('householdId', '==', hId)]);
+
+            // 6. Trips (Only those created by this user or implicit household trips - simplifying to participant check)
+            // Note: This matches trips where the current user is a participant. 
+            // Ideally we'd filter by purely household trips, but trips don't strictly have a householdId in the root.
+            // Based on previous analysis, we'll try to wipe trips associated with the user for now as a "test data reset".
+            await deleteQueryBatch('trips', [where('participantIds', 'array-contains', user.uid)]);
+
+            setDeleteLoading(false);
+            setShowDeleteDataDialog(false);
+            setDeleteConfirmation('');
+
+            // Optional: Show success toast or reload
+            alert("All household data has been deleted.");
+            window.location.reload();
+
+        } catch (error) {
+            console.error("Error deleting data:", error);
+            setDeleteLoading(false);
+            alert("Failed to delete some data. Check console.");
         }
     };
 
@@ -131,7 +197,8 @@ export default function SettingsPage() {
                         <CardTitle>Danger Zone</CardTitle>
                     </div>
                 </CardHeader>
-                <CardContent className="p-6">
+                <CardContent className="p-6 space-y-6">
+                    {/* LEAVE HOUSEHOLD */}
                     <div className="flex items-center justify-between">
                         <div className="space-y-1">
                             <h4 className="font-medium">Leave Household</h4>
@@ -147,10 +214,30 @@ export default function SettingsPage() {
                             Leave Household
                         </Button>
                     </div>
+
+                    <div className="border-t border-red-100 dark:border-red-900/50" />
+
+                    {/* DELETE ALL DATA */}
+                    <div className="flex items-center justify-between">
+                        <div className="space-y-1">
+                            <h4 className="font-medium">Delete All Data</h4>
+                            <p className="text-sm text-muted-foreground">
+                                Permanently delete <strong>all transactions, goals, assets, and trips</strong> for this household.
+                                <br />members will remain.
+                            </p>
+                        </div>
+                        <Button
+                            variant="destructive"
+                            onClick={() => setShowDeleteDataDialog(true)}
+                            disabled={loading || deleteLoading}
+                        >
+                            Delete Data
+                        </Button>
+                    </div>
                 </CardContent>
             </Card>
 
-            {/* Confirmation Dialog */}
+            {/* Leave Confirmation Dialog */}
             <Dialog open={showLeaveDialog} onOpenChange={setShowLeaveDialog}>
                 <DialogContent>
                     <DialogHeader>
@@ -173,6 +260,48 @@ export default function SettingsPage() {
                         <Button variant="outline" onClick={() => setShowLeaveDialog(false)}>Cancel</Button>
                         <Button variant="destructive" onClick={handleLeaveHousehold} disabled={loading}>
                             {loading ? 'Leaving...' : 'Yes, Leave Household'}
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
+
+            {/* Delete Data Confirmation Dialog */}
+            <Dialog open={showDeleteDataDialog} onOpenChange={setShowDeleteDataDialog}>
+                <DialogContent>
+                    <DialogHeader>
+                        <DialogTitle className="flex items-center gap-2 text-red-600">
+                            <AlertCircle className="h-5 w-5" />
+                            DELETE ALL DATA?
+                        </DialogTitle>
+                        <DialogDescription asChild>
+                            <div className="pt-2 text-sm text-muted-foreground space-y-4">
+                                <p className="font-bold text-red-500">
+                                    WARNING: THIS ACTION CANNOT BE UNDONE.
+                                </p>
+                                <p>
+                                    You are about to permanently delete ALL financial records for <strong>{householdName}</strong>.
+                                    This includes everything in Dashboard, Transactions, Savings, Goals, and Trips.
+                                </p>
+                                <p>
+                                    To confirm, type <strong>DELETE</strong> below:
+                                </p>
+                                <Input
+                                    value={deleteConfirmation}
+                                    onChange={(e) => setDeleteConfirmation(e.target.value)}
+                                    placeholder="Type DELETE to confirm"
+                                    className="border-red-300 focus-visible:ring-red-500"
+                                />
+                            </div>
+                        </DialogDescription>
+                    </DialogHeader>
+                    <DialogFooter className="mt-4">
+                        <Button variant="outline" onClick={() => setShowDeleteDataDialog(false)}>Cancel</Button>
+                        <Button
+                            variant="destructive"
+                            onClick={handleDeleteAllData}
+                            disabled={deleteLoading || deleteConfirmation !== 'DELETE'}
+                        >
+                            {deleteLoading ? 'Deleting...' : 'Permanently Delete Data'}
                         </Button>
                     </DialogFooter>
                 </DialogContent>

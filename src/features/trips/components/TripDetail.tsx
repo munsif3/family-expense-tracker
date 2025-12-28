@@ -1,0 +1,179 @@
+'use client';
+
+import { useState } from 'react';
+import { useTrip } from '../hooks/useTrip';
+import { useTripFunds, useTripExpenses, useTripReturns } from '../hooks/useTripData';
+import { useTripCalculations } from '../hooks/useTripCalculations';
+import { useTripParticipants } from '../hooks/useTripParticipants';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { format } from 'date-fns';
+import { Loader2, Plus, ArrowLeft } from 'lucide-react';
+import { useRouter } from 'next/navigation';
+
+import { AddTripFundModal } from './AddTripFundModal';
+import { AddTripExpenseModal } from './AddTripExpenseModal';
+import { AddTripReturnModal } from './AddTripReturnModal';
+import { TripFundsList } from './TripFundsList';
+import { TripExpensesList } from './TripExpensesList';
+import { TripReturnsList } from './TripReturnsList';
+import { TripAnalytics } from './TripAnalytics';
+
+interface TripDetailProps {
+    id: string;
+}
+
+export function TripDetail({ id }: TripDetailProps) {
+    const router = useRouter();
+    const { trip, loading: tripLoading } = useTrip(id);
+    const { funds, fundsLoading } = useTripFunds(id);
+    const { expenses, expensesLoading } = useTripExpenses(id);
+    const { returns, returnsLoading } = useTripReturns(id);
+
+    const { participants, loading: participantsLoading } = useTripParticipants(trip?.participantIds || []);
+
+    const { totals, byCategory, byUser } = useTripCalculations(funds, expenses, returns);
+
+    const [isFundModalOpen, setIsFundModalOpen] = useState(false);
+    const [isExpenseModalOpen, setIsExpenseModalOpen] = useState(false);
+    const [isReturnModalOpen, setIsReturnModalOpen] = useState(false);
+
+    console.log("TripDetail Render Check:", { id, tripLoading, fundsLoading, expensesLoading, returnsLoading, participantsLoading });
+
+    if (tripLoading || fundsLoading || expensesLoading || returnsLoading || participantsLoading) {
+        console.log("TripDetail: Loading...");
+        return <div className="flex justify-center items-center h-full"><Loader2 className="animate-spin h-8 w-8" /></div>;
+    }
+
+    console.log("TripDetail: All loaded. Rendering content. Trip:", trip?.tripName);
+
+    if (!trip) {
+        return <div>Trip not found</div>;
+    }
+
+    const getName = (uid: string) => participants.find(p => p.uid === uid)?.displayName || uid;
+
+    return (
+        <div className="space-y-6">
+            <div>
+                <Button variant="ghost" onClick={() => router.back()} className="mb-4 pl-0 hover:bg-transparent hover:text-primary/80">
+                    <ArrowLeft className="h-4 w-4 mr-2" /> Back to Trips
+                </Button>
+                <div className="flex justify-between items-start">
+                    <div>
+                        <h1 className="text-3xl font-bold tracking-tight">{trip.tripName}</h1>
+                        <p className="text-muted-foreground">{trip.location} • {format(trip.startDate.toDate(), 'MMM d')} - {format(trip.endDate.toDate(), 'MMM d, yyyy')}</p>
+                    </div>
+                    <div className="text-right">
+                        <p className="text-sm text-muted-foreground">Net Cost</p>
+                        <p className="text-2xl font-bold mb-4">{totals.netCost.toFixed(2)} <span className="text-sm font-normal text-muted-foreground">Base</span></p>
+                        <div className="flex gap-2 justify-end">
+                            <Button variant="outline" size="sm" onClick={() => setIsFundModalOpen(true)}><Plus className="h-4 w-4 mr-2" />Add Fund</Button>
+                            <Button size="sm" onClick={() => setIsExpenseModalOpen(true)}><Plus className="h-4 w-4 mr-2" />Add Expense</Button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            {/* Summary Cards */}
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                <Card>
+                    <CardHeader className="pb-2"><CardTitle className="text-sm font-medium">Total Funds</CardTitle></CardHeader>
+                    <CardContent><div className="text-2xl font-bold">{totals.totalFunds.toFixed(2)}</div></CardContent>
+                </Card>
+                <Card>
+                    <CardHeader className="pb-2"><CardTitle className="text-sm font-medium">Total Expenses</CardTitle></CardHeader>
+                    <CardContent><div className="text-2xl font-bold">{totals.totalExpenses.toFixed(2)}</div></CardContent>
+                </Card>
+                <Card>
+                    <CardHeader className="pb-2"><CardTitle className="text-sm font-medium">Returns</CardTitle></CardHeader>
+                    <CardContent><div className="text-2xl font-bold">{totals.totalReturns.toFixed(2)}</div></CardContent>
+                </Card>
+                <Card>
+                    <CardHeader className="pb-2"><CardTitle className="text-sm font-medium">Remaining Funds</CardTitle></CardHeader>
+                    <CardContent><div className={`text-2xl font-bold ${totals.remainingFunds < 0 ? 'text-red-500' : 'text-green-500'}`}>{totals.remainingFunds.toFixed(2)}</div></CardContent>
+                </Card>
+            </div>
+
+            <Tabs defaultValue="overview" className="space-y-4">
+                <TabsList>
+                    <TabsTrigger value="overview">Overview</TabsTrigger>
+                    <TabsTrigger value="funds">Funds</TabsTrigger>
+                    <TabsTrigger value="expenses">Expenses</TabsTrigger>
+                    <TabsTrigger value="returns">Returns</TabsTrigger>
+                    <TabsTrigger value="analytics">Analytics</TabsTrigger>
+                </TabsList>
+                <TabsContent value="overview" className="space-y-4">
+                    <Card>
+                        <CardHeader><CardTitle>Member Breakdown</CardTitle></CardHeader>
+                        <CardContent>
+                            <div className="space-y-2">
+                                {Object.entries(byUser).map(([userId, stats]) => (
+                                    <div key={userId} className="flex justify-between items-center py-2 border-b last:border-0">
+                                        <span className="font-medium">{getName(userId)}</span>
+                                        <div className="flex gap-4 text-sm">
+                                            <span className="text-green-600">In: {stats.contributed.toFixed(2)}</span>
+                                            <span className="text-red-600">Out: {stats.spent.toFixed(2)}</span>
+                                            {stats.received > 0 && <span className="text-blue-600">Got: {stats.received.toFixed(2)}</span>}
+                                            <span className={stats.balance >= 0 ? 'text-gray-900 font-bold' : 'text-red-900 font-bold'}>
+                                                Net: {stats.balance.toFixed(2)}
+                                            </span>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        </CardContent>
+                    </Card>
+                </TabsContent>
+                <TabsContent value="funds" className="space-y-4">
+                    <div className="flex justify-between items-center">
+                        <h3 className="text-lg font-medium">Travel Funds</h3>
+                        <Button size="sm" onClick={() => setIsFundModalOpen(true)}><Plus className="h-4 w-4 mr-2" />Add Fund</Button>
+                    </div>
+                    <TripFundsList funds={funds} participants={participants} onAdd={() => setIsFundModalOpen(true)} />
+                </TabsContent>
+                <TabsContent value="expenses" className="space-y-4">
+                    <div className="flex justify-between items-center">
+                        <h3 className="text-lg font-medium">Expenses</h3>
+                        <Button size="sm" onClick={() => setIsExpenseModalOpen(true)}><Plus className="h-4 w-4 mr-2" />Add Expense</Button>
+                    </div>
+                    <TripExpensesList expenses={expenses} participants={participants} onAdd={() => setIsExpenseModalOpen(true)} />
+                </TabsContent>
+                <TabsContent value="returns" className="space-y-4">
+                    <div className="flex justify-between items-center">
+                        <h3 className="text-lg font-medium">Returns / Refunds</h3>
+                        <Button size="sm" onClick={() => setIsReturnModalOpen(true)}><Plus className="h-4 w-4 mr-2" />Add Return</Button>
+                    </div>
+                    <TripReturnsList returns={returns} participants={participants} onAdd={() => setIsReturnModalOpen(true)} />
+                </TabsContent>
+                <TabsContent value="analytics" className="space-y-4">
+                    <TripAnalytics funds={funds} expenses={expenses} returns={returns} participants={participants} />
+                </TabsContent>
+            </Tabs>
+
+            <AddTripFundModal
+                tripId={id}
+                participants={participants}
+                open={isFundModalOpen}
+                onOpenChange={setIsFundModalOpen}
+            />
+
+            <AddTripExpenseModal
+                tripId={id}
+                tripName={trip.tripName}
+                participants={participants}
+                open={isExpenseModalOpen}
+                onOpenChange={setIsExpenseModalOpen}
+            />
+
+            <AddTripReturnModal
+                tripId={id}
+                tripName={trip.tripName}
+                participants={participants}
+                open={isReturnModalOpen}
+                onOpenChange={setIsReturnModalOpen}
+            />
+        </div>
+    );
+}

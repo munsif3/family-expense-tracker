@@ -10,17 +10,34 @@ const Tabs = React.forwardRef<
     HTMLDivElement,
     React.HTMLAttributes<HTMLDivElement> & {
         value?: string;
+        defaultValue?: string;
         onValueChange?: (value: string) => void;
     }
->(({ className, value, onValueChange, ...props }, ref) => (
-    <TabsContext.Provider value={{ value, onValueChange }}>
-        <div
-            ref={ref}
-            className={cn("w-full", className)}
-            {...props}
-        />
-    </TabsContext.Provider>
-))
+>(({ className, value: controlledValue, defaultValue, onValueChange, ...props }, ref) => {
+    const [internalValue, setInternalValue] = React.useState(defaultValue || "");
+
+    const value = controlledValue !== undefined ? controlledValue : internalValue;
+
+    const handleValueChange = React.useCallback(
+        (newValue: string) => {
+            onValueChange?.(newValue);
+            if (controlledValue === undefined) {
+                setInternalValue(newValue);
+            }
+        },
+        [controlledValue, onValueChange]
+    );
+
+    return (
+        <TabsContext.Provider value={{ value, onValueChange: handleValueChange }}>
+            <div
+                ref={ref}
+                className={cn("w-full", className)}
+                {...props}
+            />
+        </TabsContext.Provider>
+    );
+});
 Tabs.displayName = "Tabs"
 
 const TabsList = React.forwardRef<
