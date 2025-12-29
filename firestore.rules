@@ -59,6 +59,10 @@ service cloud.firestore {
           resource.data.householdId == get(/databases/$(database)/documents/users/$(request.auth.uid)).data.householdId
         );
     }
+    
+    match /payment_methods/{paymentMethodId} {
+        allow read, write: if true;
+    }
 
     match /assets/{assetId} {
         allow read, write: if isAuthenticated();

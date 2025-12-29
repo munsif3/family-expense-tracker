@@ -113,6 +113,16 @@ export interface RecurringTransaction {
     createdAt: Timestamp;
 }
 
+export interface PaymentMethod {
+    id: string;
+    householdId: string;
+    name: string;
+    type: 'credit_card' | 'debit_card' | 'cash' | 'bank_transfer' | 'other';
+    isCommon: boolean;
+    ownerId?: string; // If personal, who owns it?
+    last4digits?: string;
+}
+
 
 
 export interface Attachment {

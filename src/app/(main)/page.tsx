@@ -31,8 +31,8 @@ export default function DashboardPage() {
             // Family view: Show all EXCEPT personal expenses
             return transactions.filter(t => !t.isPersonal);
         }
-        // Personal view: Show transactions spent by ME
-        return transactions.filter(t => (t.spentBy === user?.uid) || (!t.spentBy && t.userId === user?.uid));
+        // Personal view: Show ONLY personal transactions spent by ME
+        return transactions.filter(t => t.isPersonal && (t.spentBy === user?.uid || (!t.spentBy && t.userId === user?.uid)));
     }, [transactions, viewMode, user]);
 
     const { insights, loading: insightsLoading } = useFinancialInsights();
@@ -61,7 +61,7 @@ export default function DashboardPage() {
                         <Tooltip content="All household transactions excluding personal expenses." side="bottom">
                             <TabsTrigger value="family">Family View</TabsTrigger>
                         </Tooltip>
-                        <Tooltip content="All transactions spent by you (including personal)." side="bottom">
+                        <Tooltip content="All transactions spent by you (Strictly Personal)." side="bottom">
                             <TabsTrigger value="personal">My View</TabsTrigger>
                         </Tooltip>
                     </TabsList>
@@ -95,7 +95,7 @@ export default function DashboardPage() {
                     <Tooltip
                         content={viewMode === 'family'
                             ? "All income sources from household members"
-                            : "Income attributed to you"}
+                            : "Income strictly attributed to you (Personal)"}
                         side="top"
                     >
                         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 cursor-help">
@@ -114,7 +114,7 @@ export default function DashboardPage() {
                     <Tooltip
                         content={viewMode === 'family'
                             ? "Shared household expenses (excludes personal items)"
-                            : "Your expenses (includes shared & personal items)"}
+                            : "Your strictly personal expenses (excludes shared items)"}
                         side="top"
                     >
                         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 cursor-help">

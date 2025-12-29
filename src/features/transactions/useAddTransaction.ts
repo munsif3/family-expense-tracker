@@ -17,6 +17,7 @@ const transactionSchema = z.object({
     interval: z.enum(['weekly', 'monthly', 'yearly']).optional(),
     spentBy: z.string().optional(),
     isPersonal: z.boolean().optional(),
+    paymentMethodId: z.string().optional(),
 });
 
 export type TransactionFormValues = z.infer<typeof transactionSchema>;
@@ -40,6 +41,7 @@ export function useAddTransaction(
             description: '',
             isRecurring: false,
             interval: 'monthly',
+            paymentMethodId: '',
         },
     });
 
@@ -54,6 +56,7 @@ export function useAddTransaction(
                 spentBy: transactionToEdit.spentBy,
                 isPersonal: transactionToEdit.isPersonal || false,
                 isRecurring: false, // Editing recurrence not supported in this modal yet
+                paymentMethodId: transactionToEdit.paymentMethodId || '',
             });
         } else {
             if (open) {
@@ -65,6 +68,7 @@ export function useAddTransaction(
                     date: defaultDate || new Date(),
                     isRecurring: false,
                     interval: 'monthly',
+                    paymentMethodId: '',
                 });
             }
         }
@@ -85,6 +89,7 @@ export function useAddTransaction(
                 date: data.date,
                 spentBy: data.spentBy || user.uid, // Fallback to current user if missing
                 isPersonal: data.isPersonal || false,
+                paymentMethodId: data.paymentMethodId,
             };
 
             if (transactionToEdit) {

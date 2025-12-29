@@ -7,12 +7,14 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Transaction, UserProfile } from '@/types';
+import { Transaction, UserProfile, PaymentMethod } from '@/types';
 import { useAddTransaction } from './useAddTransaction';
+import { paymentMethodService } from '@/lib/api/paymentMethods';
 import { CATEGORIES } from '@/lib/constants';
 import { DatePicker } from '@/components/ui/date-picker';
 import { Controller } from 'react-hook-form';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
+import Link from 'next/link';
 
 interface AddTransactionModalProps {
     transactionToEdit?: Transaction;
@@ -45,6 +47,35 @@ export function AddTransactionModal({ transactionToEdit, open, onOpenChange, def
         };
         fetchMembers();
     }, [profile?.householdId]);
+
+    // Fetch Payment Methods
+    const [paymentMethods, setPaymentMethods] = useState<PaymentMethod[]>([]);
+    const [pmLoading, setPmLoading] = useState(false);
+
+    useEffect(() => {
+        const fetchPaymentMethods = async () => {
+            if (profile?.householdId) {
+                setPmLoading(true);
+                try {
+                    const methods = await paymentMethodService.getPaymentMethods(profile.householdId);
+                    setPaymentMethods(methods);
+                } catch (e) { console.error(e); }
+                setPmLoading(false);
+            }
+        };
+        fetchPaymentMethods();
+    }, [profile?.householdId]);
+
+    // Handle Payment Method Logic
+    const selectedPaymentMethodId = form.watch('paymentMethodId');
+    useEffect(() => {
+        if (selectedPaymentMethodId) {
+            const method = paymentMethods.find(m => m.id === selectedPaymentMethodId);
+            if (method?.isCommon) {
+                form.setValue('isPersonal', false);
+            }
+        }
+    }, [selectedPaymentMethodId, paymentMethods, form]);
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
@@ -117,6 +148,34 @@ export function AddTransactionModal({ transactionToEdit, open, onOpenChange, def
                         )}
                     </div>
 
+
+                    <div className="space-y-2">
+                        <div className="flex justify-between">
+                            <Label>Payment Method</Label>
+                            {paymentMethods.length === 0 && !pmLoading && (
+                                <Link href="/settings" className="text-xs text-blue-600 hover:underline" onClick={() => onOpenChange?.(false)}>
+                                    + Add Method
+                                </Link>
+                            )}
+                        </div>
+                        <Select
+                            onValueChange={(val) => form.setValue('paymentMethodId', val)}
+                            value={form.watch('paymentMethodId')}
+                            disabled={pmLoading || paymentMethods.length === 0}
+                        >
+                            <SelectTrigger>
+                                <SelectValue placeholder={pmLoading ? "Loading..." : (paymentMethods.length === 0 ? "No methods set" : "Select payment method")} />
+                            </SelectTrigger>
+                            <SelectContent>
+                                {paymentMethods.map((method) => (
+                                    <SelectItem key={method.id} value={method.id}>
+                                        {method.name} {method.isCommon ? '(Common)' : '(Personal)'}
+                                    </SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
+                    </div>
+
                     <div className="space-y-2">
                         <Label>Spent By</Label>
                         <Select
@@ -148,6 +207,11 @@ export function AddTransactionModal({ transactionToEdit, open, onOpenChange, def
                             This is a personal expense (not shared)
                         </Label>
                     </div>
+                    {selectedPaymentMethodId && paymentMethods.find(m => m.id === selectedPaymentMethodId)?.isCommon && (
+                        <p className="text-xs text-muted-foreground ml-6">
+                            Common payment method selected. This is likely a shared expense.
+                        </p>
+                    )}
 
                     <div className="space-y-2">
                         <Label>Description</Label>

@@ -1,15 +1,19 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '@/features/auth/AuthContext';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { AlertCircle, Home, User, ShieldAlert } from 'lucide-react';
+import { AlertCircle, Home, User, ShieldAlert, CreditCard, Trash2, Plus } from 'lucide-react';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { doc, updateDoc, arrayRemove, getDoc, collection, query, where, getDocs, writeBatch } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
+import { PaymentMethod } from '@/types';
+import { paymentMethodService } from '@/lib/api/paymentMethods';
+import { Badge } from '@/components/ui/badge';
+
 
 
 export default function SettingsPage() {
@@ -47,6 +51,47 @@ export default function SettingsPage() {
         };
         fetchHousehold();
     }, [profile?.householdId]);
+
+    // Payment Methods Logic
+    const [paymentMethods, setPaymentMethods] = useState<PaymentMethod[]>([]);
+    const [newMethodName, setNewMethodName] = useState('');
+    const [newMethodIsCommon, setNewMethodIsCommon] = useState(true);
+    const [pmLoading, setPmLoading] = useState(false);
+
+    const refreshPaymentMethods = useCallback(async () => {
+        if (!profile?.householdId) return;
+        const methods = await paymentMethodService.getPaymentMethods(profile.householdId);
+        setPaymentMethods(methods);
+    }, [profile?.householdId]);
+
+    useEffect(() => {
+        if (profile?.householdId) refreshPaymentMethods();
+    }, [profile?.householdId, refreshPaymentMethods]);
+
+    const handleAddPaymentMethod = async () => {
+        if (!newMethodName.trim() || !profile?.householdId) return;
+        setPmLoading(true);
+        try {
+            await paymentMethodService.addPaymentMethod({
+                householdId: profile.householdId,
+                name: newMethodName,
+                type: 'credit_card', // Defaulting to credit card for now
+                isCommon: newMethodIsCommon,
+            });
+            setNewMethodName('');
+            setNewMethodIsCommon(true);
+            refreshPaymentMethods();
+        } catch (e) { console.error(e); }
+        setPmLoading(false);
+    };
+
+    const handleDeletePaymentMethod = async (id: string) => {
+        if (!window.confirm('Delete this payment method?')) return;
+        try {
+            await paymentMethodService.deletePaymentMethod(id);
+            refreshPaymentMethods();
+        } catch (e) { console.error(e); }
+    };
 
     const handleLeaveHousehold = async () => {
         if (!user || !profile?.householdId) return;
@@ -187,6 +232,83 @@ export default function SettingsPage() {
                     <div className="grid gap-2">
                         <Label>Currency</Label>
                         <Input value={currency} disabled readOnly className="bg-muted" />
+                    </div>
+                </CardContent>
+            </Card>
+
+            <Card>
+                <CardHeader>
+                    <div className="flex items-center gap-2">
+                        <CreditCard className="h-5 w-5 text-primary" />
+                        <CardTitle>Payment Methods</CardTitle>
+                    </div>
+                    <CardDescription>
+                        Manage sources of funds. &quot;Common&quot; methods are treated as shared expenses.
+                    </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-6">
+                    <div className="space-y-4">
+                        {paymentMethods.length === 0 && (
+                            <p className="text-sm text-muted-foreground italic">No payment methods added yet.</p>
+                        )}
+                        {paymentMethods.map(pm => (
+                            <div key={pm.id} className="flex items-center justify-between p-3 border rounded-lg bg-card text-card-foreground shadow-sm">
+                                <div className="flex items-center gap-3">
+                                    <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
+                                        <CreditCard className="h-5 w-5 text-primary" />
+                                    </div>
+                                    <div>
+                                        <p className="font-medium text-sm">{pm.name}</p>
+                                        <div className="flex items-center gap-2">
+                                            <Badge variant={pm.isCommon ? "default" : "secondary"} className="text-[10px] h-5">
+                                                {pm.isCommon ? 'Common / Shared' : 'Personal'}
+                                            </Badge>
+                                            <span className="text-xs text-muted-foreground capitalize">{pm.type.replace('_', ' ')}</span>
+                                        </div>
+                                    </div>
+                                </div>
+                                <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    onClick={() => handleDeletePaymentMethod(pm.id)}
+                                    className="text-muted-foreground hover:text-destructive"
+                                >
+                                    <Trash2 className="h-4 w-4" />
+                                </Button>
+                            </div>
+                        ))}
+                    </div>
+
+                    <div className="border-t pt-4">
+                        <h4 className="text-sm font-medium mb-3">Add New Method</h4>
+                        <div className="grid gap-4 sm:grid-cols-[1fr_auto_auto] items-end">
+                            <div className="space-y-2">
+                                <Label>Name</Label>
+                                <Input
+                                    placeholder="e.g. Amex Gold, Joint Account"
+                                    value={newMethodName}
+                                    onChange={(e) => setNewMethodName(e.target.value)}
+                                />
+                            </div>
+                            <div className="space-y-2 pb-3">
+                                <div className="flex items-center space-x-2">
+                                    <input
+                                        type="checkbox"
+                                        id="newPmCommon"
+                                        className="h-4 w-4 rounded border-gray-300"
+                                        checked={newMethodIsCommon}
+                                        onChange={(e) => setNewMethodIsCommon(e.target.checked)}
+                                    />
+                                    <Label htmlFor="newPmCommon" className="font-normal cursor-pointer text-sm">
+                                        Is Common?
+                                    </Label>
+                                </div>
+                            </div>
+                            <Button onClick={handleAddPaymentMethod} disabled={pmLoading || !newMethodName}>
+                                <Plus className="h-4 w-4 mr-2" />
+                                Add
+                            </Button>
+                        </div>
                     </div>
                 </CardContent>
             </Card>
