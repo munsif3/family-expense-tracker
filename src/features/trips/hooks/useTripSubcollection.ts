@@ -8,12 +8,10 @@ import {
     updateDoc,
     doc,
     orderBy,
-    Timestamp,
     QueryConstraint
 } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { useAuth } from '@/features/auth/AuthContext';
-import { TripExpense, TripFund, TripReturn } from '../types';
 
 export function useSubcollection<T extends { id: string }>(
     tripId: string,
@@ -54,6 +52,7 @@ export function useSubcollection<T extends { id: string }>(
         });
 
         return () => unsubscribe();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [tripId, user, subcollectionName]);
 
     const add = async (item: Omit<T, 'id'>) => {
@@ -63,6 +62,7 @@ export function useSubcollection<T extends { id: string }>(
 
     const update = async (id: string, updates: Partial<T>) => {
         if (!tripId) return;
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         await updateDoc(doc(db, 'trips', tripId, subcollectionName, id), updates as any);
     };
 

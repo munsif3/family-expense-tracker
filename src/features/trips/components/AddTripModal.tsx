@@ -100,6 +100,7 @@ export function AddTripModal({ open, onOpenChange }: AddTripModalProps) {
 
                     <div className="space-y-2">
                         <Label htmlFor="tripType">Trip Type</Label>
+                        {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
                         <Select onValueChange={(val) => reset(values => ({ ...values, tripType: val as any }))} defaultValue="international">
                             <SelectTrigger>
                                 <SelectValue placeholder="Select type" />

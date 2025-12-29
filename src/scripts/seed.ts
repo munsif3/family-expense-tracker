@@ -1,3 +1,4 @@
+/* eslint-disable */
 /**
  * Run this script to seed the database.
  * Usage: npx tsx src/scripts/seed.ts

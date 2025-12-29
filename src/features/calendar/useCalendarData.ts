@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/features/auth/AuthContext';
-import { collection, query, where, getDocs, Timestamp, orderBy } from 'firebase/firestore';
-import { db } from '@/lib/firebase';
+import { where, getDocs, Timestamp, orderBy } from 'firebase/firestore';
+
 import { createSecureQuery } from '@/lib/firestoreUtils';
 import { toJsDate } from '@/lib/utils';
 import { Transaction } from '@/types';
@@ -73,7 +73,7 @@ export function useCalendarData(currentMonth: Date) {
                         totalExpense += t.amount;
                     }
 
-                    map[dateKey].transactions.push({ ...t, date: date as any });
+                    map[dateKey].transactions.push({ ...t, date: date as unknown as Timestamp });
                 });
 
                 setDailyMap(map);
@@ -87,7 +87,7 @@ export function useCalendarData(currentMonth: Date) {
         };
 
         fetchData();
-    }, [profile?.householdId, currentMonth]); // Re-fetch when month changes
+    }, [profile?.householdId, profile?.uid, currentMonth]); // Re-fetch when month changes
 
     return { dailyMap, monthlyStats, loading };
 }

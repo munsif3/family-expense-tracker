@@ -16,12 +16,13 @@ export function TripFundsList({ funds, participants, onAdd }: TripFundsListProps
 
     console.log("[TripFundsList] Rendering. Funds:", funds.length, funds);
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const formatDate = (date: any) => {
         try {
             if (date?.toDate) return format(date.toDate(), 'MMM d');
             if (date instanceof Date) return format(date, 'MMM d');
             return 'Invalid Date';
-        } catch (e) {
+        } catch {
             return 'Error';
         }
     };

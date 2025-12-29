@@ -18,7 +18,7 @@ export default function SavingsPage() {
     const {
         assets,
         stats,
-        grouped,
+        // grouped,
         loading,
         currency,
         assetToEdit,

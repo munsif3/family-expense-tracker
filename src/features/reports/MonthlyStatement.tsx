@@ -1,5 +1,5 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Loader2, ArrowUpRight, ArrowDownLeft, TrendingUp } from 'lucide-react';
+import { Loader2 } from 'lucide-react';
 import { formatCurrency } from '@/lib/utils';
 import { StatementData } from './useMonthlyStatement';
 import { Progress } from '@/components/ui/progress';

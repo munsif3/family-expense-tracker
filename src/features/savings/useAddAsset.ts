@@ -1,16 +1,17 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { useAuth } from '@/features/auth/AuthContext';
 import { db } from '@/lib/firebase';
-import { collection, query, where, getDocs, Timestamp } from 'firebase/firestore';
+import { collection, query, where, getDocs } from 'firebase/firestore';
 import { Asset, UserProfile } from '@/types';
 import { assetService } from '@/lib/api/assets';
 import { getAssetSchema, baseAssetSchema, ASSET_META_SCHEMAS } from './assetSchemas';
 import { ASSET_TYPES } from '@/lib/constants';
 
 // We use a loose type for the form to accommodate dynamic fields
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 type AssetFormValues = z.infer<typeof baseAssetSchema> & Record<string, any>;
 
 export function useAddAsset(
@@ -40,7 +41,7 @@ export function useAddAsset(
 
     const form = useForm<AssetFormValues>({
         // Dynamic resolver: decides schema based on 'type' field
-        // @ts-ignore: async resolver type mismatch with loose form values
+        // @ts-expect-error: async resolver type mismatch with loose form values
         resolver: async (values, context, options) => {
             const type = values.type || 'FD';
             const schema = getAssetSchema(type);
@@ -96,10 +97,13 @@ export function useAddAsset(
             // Extract standard fields
             const standardKeys = Object.keys(baseAssetSchema.shape);
             // Dynamic fields are everything else
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
             const meta: Record<string, any> = {};
 
             // Explicitly add foreign currency fields to meta
             if (data.isForeignCurrency) {
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                const meta: Record<string, any> = (data as any).meta || {};
                 meta.isForeignCurrency = data.isForeignCurrency;
                 meta.originalCurrency = data.originalCurrency;
                 meta.originalAmount = data.originalAmount;
@@ -121,7 +125,7 @@ export function useAddAsset(
                 type: data.type,
                 amountInvested: invested,
                 currentValue: current,
-                buyDate: Timestamp.fromDate(new Date(data.buyDate)),
+                buyDate: new Date(data.buyDate),
                 source: data.source,
                 ownerIds: data.ownerIds,
                 meta: meta, // Save dynamic fields here

@@ -7,8 +7,8 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Loader2, Plus } from 'lucide-react';
-import { Transaction } from '@/types';
+import { Loader2 } from 'lucide-react';
+import { Transaction, UserProfile } from '@/types';
 import { useAddTransaction } from './useAddTransaction';
 import { CATEGORIES } from '@/lib/constants';
 
@@ -26,7 +26,7 @@ export function AddTransactionModal({ transactionToEdit, open, onOpenChange }: A
 
     // Fetch household members for "Spent By"
     const { profile } = useAuth();
-    const [members, setMembers] = useState<any[]>([]);
+    const [members, setMembers] = useState<UserProfile[]>([]);
     useEffect(() => {
         const fetchMembers = async () => {
             if (profile?.householdId) {
@@ -36,7 +36,7 @@ export function AddTransactionModal({ transactionToEdit, open, onOpenChange }: A
                         where('householdId', '==', profile.householdId)
                     );
                     const snapshot = await getDocs(q);
-                    setMembers(snapshot.docs.map(d => d.data()));
+                    setMembers(snapshot.docs.map(d => d.data() as UserProfile));
                 } catch (e) { console.error(e); }
             }
         };

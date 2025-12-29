@@ -21,9 +21,9 @@ export function useOnboarding() {
             } else {
                 await createHousehold(name, currency);
             }
-        } catch (err: any) {
+        } catch (err: unknown) {
             console.error("Error checking household:", err);
-            setError("Error checking availability: " + err.message);
+            setError("Error checking availability: " + (err as { message?: string }).message);
         } finally {
             setLoading(false);
         }
@@ -37,9 +37,9 @@ export function useOnboarding() {
         try {
             await householdService.createHousehold({ name, currency }, user);
             // Success - AuthContext will pick up the change
-        } catch (err: any) {
+        } catch (err: unknown) {
             console.error("Error creating household:", err);
-            setError("Failed to create household: " + err.message);
+            setError("Failed to create household: " + (err as { message?: string }).message);
         } finally {
             setLoading(false);
         }
@@ -53,9 +53,9 @@ export function useOnboarding() {
         try {
             await householdService.joinHousehold(existingHousehold.id, user);
             // Success - AuthContext will pick up change
-        } catch (err: any) {
+        } catch (err: unknown) {
             console.error("Error joining household:", err);
-            setError("Failed to join household: " + err.message);
+            setError("Failed to join household: " + (err as { message?: string }).message);
         } finally {
             setLoading(false);
         }

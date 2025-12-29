@@ -41,6 +41,9 @@ service cloud.firestore {
           request.resource.data.memberIds.hasAll(resource.data.memberIds) &&
           request.auth.uid in request.resource.data.memberIds)
       );
+      match /settings/{document=**} {
+        allow read, write: if isAuthenticated();
+      }
     }
 
     // Transactions: Ensure user is the owner

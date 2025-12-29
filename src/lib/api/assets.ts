@@ -1,6 +1,5 @@
 import { db } from '@/lib/firebase';
 import { addDoc, collection, serverTimestamp, Timestamp, updateDoc, doc } from 'firebase/firestore';
-import { Asset } from '@/types';
 
 export interface AssetData {
     name: string;

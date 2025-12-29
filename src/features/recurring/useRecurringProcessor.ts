@@ -75,5 +75,5 @@ export function useRecurringProcessor() {
 
         // Run once on mount (or when profile loads)
         processRecurring();
-    }, [profile?.householdId]);
+    }, [profile?.householdId, profile?.uid]);
 }

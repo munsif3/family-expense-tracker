@@ -33,7 +33,7 @@ export function TripDetail({ id }: TripDetailProps) {
 
     const { participants, loading: participantsLoading } = useTripParticipants(trip?.participantIds || []);
 
-    const { totals, byCategory, byUser } = useTripCalculations(funds, expenses, returns);
+    const { totals, byUser } = useTripCalculations(funds, expenses, returns);
 
     const [isFundModalOpen, setIsFundModalOpen] = useState(false);
     const [isExpenseModalOpen, setIsExpenseModalOpen] = useState(false);

@@ -26,10 +26,11 @@ import {
     SelectValue,
 } from '@/components/ui/select';
 import { useTripExpenses } from '../hooks/useTripData';
-import { useTripCalculations, syncTripExpensesToMainTracker } from '../hooks/useTripCalculations';
-import { UserProfile, TripExpense } from '@/types';
+import { syncTripExpensesToMainTracker } from '../hooks/useTripCalculations'; // Hook might be used? No lint said unused.
+
+import { UserProfile } from '@/types';
 import { useAuth } from '@/features/auth/AuthContext';
-import { ExpenseCategory } from '../types';
+import { ExpenseCategory, TripExpense } from '../types';
 
 const expenseSchema = z.object({
     date: z.string(),
@@ -104,7 +105,7 @@ export function AddTripExpenseModal({ tripId, tripName, participants: tripPartic
 
             // 2. Fetch all expenses to update aggregation
             const querySnapshot = await getDocs(collection(db, 'trips', tripId, 'expenses'));
-            const allExpenses = querySnapshot.docs.map(d => ({ id: d.id, ...d.data() })) as any[];
+            const allExpenses = querySnapshot.docs.map(d => ({ id: d.id, ...d.data() })) as (TripExpense & { id: string })[];
 
             // 3. Sync
             await syncTripExpensesToMainTracker(
@@ -174,7 +175,7 @@ export function AddTripExpenseModal({ tripId, tripName, participants: tripPartic
                         </div>
                         <div className="space-y-2">
                             <Label htmlFor="category">Category</Label>
-                            <Select onValueChange={(val) => setValue('category', val as any)} defaultValue="food">
+                            <Select onValueChange={(val) => setValue('category', val as ExpenseCategory)} defaultValue="food">
                                 <SelectTrigger>
                                     <SelectValue placeholder="Category" />
                                 </SelectTrigger>

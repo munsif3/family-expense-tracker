@@ -1,6 +1,5 @@
 import { db } from '@/lib/firebase';
 import { addDoc, collection, serverTimestamp, Timestamp, updateDoc, doc } from 'firebase/firestore';
-import { Transaction } from '@/types';
 
 export interface TransactionData {
     type: 'income' | 'expense';

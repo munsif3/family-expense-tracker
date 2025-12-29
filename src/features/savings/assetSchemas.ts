@@ -69,6 +69,7 @@ export const bankAssetSchema = baseAssetSchema.extend({
 });
 
 // Map types to their specific schemas
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export const ASSET_META_SCHEMAS: Record<string, z.ZodObject<any>> = {
     'FD': fdSchema,
     'Gold': goldSchema,
@@ -95,4 +96,5 @@ export function getAssetSchema(type: string) {
 // Type inference helper
 // Note on unions: To get a fully strictly typed inferred union would be complex. 
 // For practical form usage, we often use an intersection or a loose record.
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export type AssetFormValues = z.infer<typeof baseAssetSchema> & Record<string, any>;

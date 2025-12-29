@@ -14,11 +14,11 @@ interface TripAnalyticsProps {
 const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884d8', '#82ca9d', '#ffc658'];
 
 export function TripAnalytics({ funds, expenses, returns, participants }: TripAnalyticsProps) {
-    const { byCategory, byUser, totals } = useTripCalculations(funds, expenses, returns);
+    const { byCategory, byUser } = useTripCalculations(funds, expenses, returns);
 
     // 1. Expenses by Category Data
     const categoryData = Object.entries(byCategory)
-        .filter(([_, value]) => value > 0)
+        .filter(([, value]) => value > 0)
         .map(([name, value]) => ({ name: name.charAt(0).toUpperCase() + name.slice(1), value }));
 
     // 2. Member Balances Data
@@ -49,6 +49,7 @@ export function TripAnalytics({ funds, expenses, returns, participants }: TripAn
                                     cx="50%"
                                     cy="50%"
                                     labelLine={false}
+                                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
                                     label={({ name, percent }: any) => `${name} ${(percent * 100).toFixed(0)}%`}
                                     outerRadius={80}
                                     fill="#8884d8"
@@ -58,6 +59,7 @@ export function TripAnalytics({ funds, expenses, returns, participants }: TripAn
                                         <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                                     ))}
                                 </Pie>
+                                {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
                                 <Tooltip formatter={(value: any) => value.toFixed(2)} />
                             </PieChart>
                         </ResponsiveContainer>
@@ -75,7 +77,8 @@ export function TripAnalytics({ funds, expenses, returns, participants }: TripAn
                                 <CartesianGrid strokeDasharray="3 3" />
                                 <XAxis type="number" />
                                 <YAxis dataKey="name" type="category" width={80} />
-                                <Tooltip formatter={(value: any) => value.toFixed(2)} />
+                                {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
+                                <Tooltip formatter={(value: any) => value?.toFixed(2)} />
                                 <Legend />
                                 <Bar dataKey="Net" fill="#8884d8">
                                     {balanceData.map((entry, index) => (

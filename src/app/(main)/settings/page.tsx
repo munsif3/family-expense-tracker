@@ -6,15 +6,15 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { LogOut, AlertCircle, Home, User, ShieldAlert } from 'lucide-react';
+import { AlertCircle, Home, User, ShieldAlert } from 'lucide-react';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { doc, updateDoc, arrayRemove, getDoc, collection, query, where, getDocs, writeBatch } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
-import { useRouter } from 'next/navigation';
+
 
 export default function SettingsPage() {
     const { user, profile } = useAuth();
-    const router = useRouter();
+    // const router = useRouter(); // Unused
     const [loading, setLoading] = useState(false);
     // State for Leave Household
     const [showLeaveDialog, setShowLeaveDialog] = useState(false);
@@ -37,9 +37,9 @@ export default function SettingsPage() {
                         setHouseholdName(snap.data().name);
                         setCurrency(snap.data().currency);
                     }
-                } catch (err: any) {
+                } catch (err: unknown) {
                     console.error("Error fetching household:", err);
-                    if (err.code === 'permission-denied') {
+                    if ((err as { code?: string }).code === 'permission-denied') {
                         setHouseholdName("Access Denied (Please Leave)");
                     }
                 }
@@ -89,9 +89,10 @@ export default function SettingsPage() {
 
         try {
             const hId = profile.householdId;
-            const batchSize = 400; // Safety margin below 500 limit
+            // const batchSize = 400; // Safety margin below 500 limit
 
             // Helper to delete query results in batches
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
             const deleteQueryBatch = async (collectionName: string, qConstraint: any) => {
                 const q = query(collection(db, collectionName), ...qConstraint);
                 const snapshot = await getDocs(q);

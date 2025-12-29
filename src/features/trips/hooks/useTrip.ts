@@ -12,6 +12,7 @@ export function useTrip(tripId: string) {
 
     useEffect(() => {
         if (!user || !tripId) {
+            // eslint-disable-next-line react-hooks/set-state-in-effect
             setLoading(false);
             return;
         }

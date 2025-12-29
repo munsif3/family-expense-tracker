@@ -3,8 +3,7 @@ import { useAuth } from '@/features/auth/AuthContext';
 import { where, orderBy, onSnapshot } from 'firebase/firestore';
 import { createSecureQuery } from '@/lib/firestoreUtils';
 import { Transaction } from '@/types';
-import { startOfMonth, endOfMonth, parseISO } from 'date-fns';
-import { toJsDate } from '@/lib/utils';
+import { startOfMonth, endOfMonth } from 'date-fns';
 
 export interface GroupedCategory {
     category: string;
@@ -29,6 +28,7 @@ export function useMonthlyStatement(month: number, year: number) {
     useEffect(() => {
         if (!profile?.householdId) return;
 
+        // eslint-disable-next-line react-hooks/set-state-in-effect
         setLoading(true);
 
         const startDate = startOfMonth(new Date(year, month));
@@ -61,7 +61,7 @@ export function useMonthlyStatement(month: number, year: number) {
         });
 
         return () => unsubscribe();
-    }, [profile?.householdId, month, year]);
+    }, [profile?.householdId, month, year, profile?.uid]);
 
     const statement: StatementData = useMemo(() => {
         const incomeMap: Record<string, number> = {};

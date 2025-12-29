@@ -6,10 +6,16 @@ import { FinancialGoal } from '@/types';
 
 const goalSchema = z.object({
     name: z.string().min(1, 'Name is required'),
-    targetAmount: z.string().min(1, 'Target amount is required'), // parsed to number on submit
+    targetAmount: z.string().min(1, 'Target amount is required'),
     currentAmount: z.string().optional(),
     color: z.string(),
     deadline: z.date().optional().nullable(),
+    // New Fields
+    category: z.enum(['short-term', 'medium-term', 'long-term'] as const),
+    priority: z.enum(['high', 'medium', 'low'] as const),
+    monthlyContribution: z.string().optional(),
+    riskLevel: z.enum(['conservative', 'moderate', 'aggressive'] as const).optional(),
+    fundingSourceIds: z.array(z.string()).optional(),
 });
 
 export type GoalFormData = z.infer<typeof goalSchema>;
@@ -38,6 +44,11 @@ export function useGoalForm(
             currentAmount: '0',
             color: GOAL_COLORS[0].value,
             deadline: undefined,
+            category: 'medium-term',
+            priority: 'medium',
+            monthlyContribution: '',
+            riskLevel: undefined,
+            fundingSourceIds: []
         },
     });
 
@@ -50,6 +61,11 @@ export function useGoalForm(
                 currentAmount: initialData.currentAmount.toString(),
                 color: initialData.color,
                 deadline: initialData.deadline,
+                category: initialData.category || 'medium-term',
+                priority: initialData.priority || 'medium',
+                monthlyContribution: initialData.monthlyContribution?.toString() || '',
+                riskLevel: initialData.riskLevel,
+                fundingSourceIds: initialData.fundingSourceIds || []
             });
         } else {
             form.reset({
@@ -57,7 +73,12 @@ export function useGoalForm(
                 targetAmount: '',
                 currentAmount: '0',
                 color: GOAL_COLORS[0].value,
-                deadline: undefined, // Reset to undefined on clear
+                deadline: undefined,
+                category: 'medium-term',
+                priority: 'medium',
+                monthlyContribution: '',
+                riskLevel: undefined,
+                fundingSourceIds: []
             });
         }
     }, [initialData, form]);
@@ -70,8 +91,14 @@ export function useGoalForm(
                 targetAmount: parseFloat(data.targetAmount) || 0,
                 currentAmount: parseFloat(data.currentAmount || '0') || 0,
                 color: data.color,
-                deadline: data.deadline || undefined, // undefined is better for optional in Firestore usually, or null
+                deadline: data.deadline || undefined,
                 icon: 'trophy',
+                // New Fields
+                category: data.category,
+                priority: data.priority,
+                monthlyContribution: data.monthlyContribution ? parseFloat(data.monthlyContribution) : undefined,
+                riskLevel: data.riskLevel,
+                fundingSourceIds: data.fundingSourceIds
             });
             onSuccess();
         } catch (error) {

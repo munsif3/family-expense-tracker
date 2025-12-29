@@ -31,13 +31,13 @@ export interface CalendarProps {
 }
 
 export function Calendar({
-    mode = "single",
+    // mode = "single", // Unused
+
     selected,
     onSelect,
     month,
     onMonthChange,
     className,
-    modifiers,
     renderDay
 }: CalendarProps) {
 
@@ -93,7 +93,7 @@ export function Calendar({
 
             {/* Calendar Grid */}
             <div className="grid grid-cols-7 w-full border-l border-b bg-card rounded-b-lg overflow-hidden flex-1">
-                {days.map((day, idx) => {
+                {days.map((day) => {
                     const isSelected = selected && isSameDay(day, selected);
                     const isCurrentMonth = isSameMonth(day, month);
 

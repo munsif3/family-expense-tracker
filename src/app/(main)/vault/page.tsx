@@ -1,9 +1,8 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useAuth } from '@/features/auth/AuthContext';
-import { collection, query, where, onSnapshot } from 'firebase/firestore';
-import { db } from '@/lib/firebase';
+
 import { Asset } from '@/types';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -17,9 +16,8 @@ import { toast } from 'sonner';
 
 export default function VaultPage() {
     const { profile, household } = useAuth();
-    const [vaultItems, setVaultItems] = useState<Asset[]>([]);
+    const [vaultItems] = useState<Asset[]>([]);
     const [unlocked, setUnlocked] = useState(false);
-    const [loading, setLoading] = useState(true);
     const [unlocking, setUnlocking] = useState(false);
 
     // ... useEffect (fetch) ...
@@ -43,9 +41,9 @@ export default function VaultPage() {
 
             setUnlocked(true);
             toast.success("Vault unlocked successfully.");
-        } catch (error: any) {
+        } catch (error: unknown) {
             console.error("Unlock failed", error);
-            if (error.name === 'DataError') {
+            if ((error as { name?: string }).name === 'DataError') {
                 toast.error("Security Key Error: The stored key is invalid or corrupted.");
             } else {
                 toast.error("Failed to unlock vault.");
@@ -127,7 +125,7 @@ export default function VaultPage() {
 
                     {vaultItems.length === 0 && (
                         <div className="col-span-full py-12 text-center text-muted-foreground">
-                            No items in the vault. Add "Jewellery" from the Add button.
+                            No items in the vault. Add &quot;Jewellery&quot; from the Add button.
                         </div>
                     )}
                 </div>

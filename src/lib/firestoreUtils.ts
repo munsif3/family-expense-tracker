@@ -1,4 +1,4 @@
-import { collection, query, where, QueryConstraint, CollectionReference, DocumentData } from 'firebase/firestore';
+import { collection, query, where, QueryConstraint } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 
 interface SecureQueryOptions {

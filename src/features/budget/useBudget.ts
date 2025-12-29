@@ -1,12 +1,11 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useAuth } from '@/features/auth/AuthContext';
-import { collection, query, where, onSnapshot, doc, setDoc } from 'firebase/firestore';
+import { collection, query, where, doc, setDoc, onSnapshot } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { createSecureQuery } from '@/lib/firestoreUtils';
 import { calculateAnnualStatus, calculateMonthlyStatus } from '@/features/budget/budgetUtils';
 import { Transaction, Category } from '@/types';
 import { budgetService } from '@/lib/api/budgets';
-import { getYear, getMonth } from 'date-fns';
 
 export interface BudgetStatusItem {
     name: string;
@@ -62,7 +61,7 @@ export function useBudget() {
             setTransactions(data);
         });
         return () => unsubscribe();
-    }, [profile?.householdId]);
+    }, [profile?.householdId, profile?.uid]);
 
     // Fetch Categories & Seed if Empty
     useEffect(() => {

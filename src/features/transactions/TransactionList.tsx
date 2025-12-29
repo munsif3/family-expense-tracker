@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { Transaction } from '@/types';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 
-import { ArrowDownLeft, ArrowUpRight, Calendar, Tag, MoreHorizontal, Edit2, Trash2 } from 'lucide-react';
+import { ArrowDownLeft, ArrowUpRight, Tag, MoreHorizontal, Edit2, Trash2 } from 'lucide-react';
 import { cn, formatCurrency } from '@/lib/utils';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Button } from '@/components/ui/button';

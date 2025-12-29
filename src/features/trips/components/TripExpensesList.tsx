@@ -1,4 +1,5 @@
 import { TripExpense, UserProfile } from '@/types';
+import { toJsDate } from '@/lib/utils';
 import { format } from 'date-fns';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
@@ -14,14 +15,11 @@ export function TripExpensesList({ expenses, participants, onAdd }: TripExpenses
         return participants.find(p => p.uid === uid)?.displayName || uid;
     };
 
-    console.log("[TripExpensesList] Rendering. Expenses:", expenses.length, expenses);
-
-    const formatDate = (date: any) => {
+    const formatDate = (date: unknown) => {
         try {
-            if (date?.toDate) return format(date.toDate(), 'MMM d');
-            if (date instanceof Date) return format(date, 'MMM d');
-            return 'Invalid Date';
-        } catch (e) {
+            const jsDate = toJsDate(date);
+            return format(jsDate, 'MMM d');
+        } catch {
             return 'Error';
         }
     };

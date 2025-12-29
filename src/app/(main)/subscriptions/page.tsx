@@ -5,7 +5,7 @@ import { useAuth } from '@/features/auth/AuthContext';
 import { collection, query, where, getDocs, deleteDoc, doc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { RecurringTransaction } from '@/types';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Loader2, Trash2, CalendarClock } from 'lucide-react';
 import { formatCurrency } from '@/lib/utils';
@@ -70,7 +70,7 @@ export default function SubscriptionsPage() {
                     <CardContent className="flex flex-col items-center justify-center py-12 text-center text-muted-foreground">
                         <CalendarClock className="h-12 w-12 mb-4 opacity-50" />
                         <p className="text-lg font-medium">No recurring transactions found</p>
-                        <p className="text-sm">Add a transaction and check "Recurring" to see it here.</p>
+                        <p className="text-sm">Add a transaction and check &quot;Recurring&quot; to see it here.</p>
                     </CardContent>
                 </Card>
             ) : (

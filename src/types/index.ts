@@ -17,6 +17,11 @@ export interface UserProfile {
 
 // ...
 
+export type GoalCategory = 'short-term' | 'medium-term' | 'long-term';
+export type GoalPriority = 'high' | 'medium' | 'low';
+export type RiskTolerance = 'conservative' | 'moderate' | 'aggressive';
+export type FeasibilityStatus = 'feasible' | 'conditionally-feasible' | 'not-feasible';
+
 export interface FinancialGoal {
     id: string;
     userId: string;
@@ -28,6 +33,40 @@ export interface FinancialGoal {
     color: string;
     icon: string;
     createdAt?: Timestamp | FieldValue;
+
+    // Planning Fields
+    category?: GoalCategory;
+    priority?: GoalPriority;
+    monthlyContribution?: number;
+    inflationRate?: number;
+    fundingSourceIds?: string[];
+    riskLevel?: RiskTolerance;
+
+    // Feasibility Output
+    feasibilityStatus?: FeasibilityStatus;
+    feasibilityNote?: string;
+}
+
+export interface FinancialProfile {
+    householdId: string;
+    currency: string;
+    riskAllocation: {
+        conservative: number; // % (0-100)
+        moderate: number;
+        aggressive: number;
+    };
+    savingsCapacity: { userId: string; amount: number }[];
+    totalMonthlyIncome: number;
+    monthlyCommitments: number;
+    variableCommitments: number;
+    incomeGrowthRate?: number; // Annual %
+    annualBonus?: number; // Annual 1-time amount
+    income: {
+        userId: string;
+        grossMonthly: number;
+        netMonthly: number;
+    }[];
+    lastUpdated: Timestamp;
 }
 
 export interface Household {
@@ -108,6 +147,7 @@ export interface Asset {
     notes?: string;
     isEncrypted: boolean; // If true, sensitive fields like photos/notes are client-side encrypted
     attachments: Attachment[];
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     meta: Record<string, any>; // Flexible for different asset types (gold weight, karat, etc)
     source?: string;
     ownerIds?: string[]; // Multiple owners support

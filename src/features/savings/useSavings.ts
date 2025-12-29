@@ -3,8 +3,8 @@ import { useAuth } from '@/features/auth/AuthContext';
 import { collection, query, where, onSnapshot, deleteDoc, doc, getDocs } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { Asset, UserProfile } from '@/types';
-import { ASSET_TYPES } from '@/lib/constants';
-import { Building2, Coins, Gem, Landmark, PieChart, TrendingUp, Wallet, Bitcoin, LucideIcon } from 'lucide-react';
+
+import { Building2, Gem, Landmark, TrendingUp, Wallet, Bitcoin, LucideIcon } from 'lucide-react';
 
 export const ASSET_ICONS: Record<string, LucideIcon> = {
     'FD': Landmark,

@@ -1,7 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useAuth } from '@/features/auth/AuthContext';
-import { collection, query, where, orderBy, limit, onSnapshot } from 'firebase/firestore';
-import { db } from '@/lib/firebase';
+import { orderBy, limit, onSnapshot } from 'firebase/firestore';
 import { createSecureQuery } from '@/lib/firestoreUtils';
 import { Transaction } from '@/types';
 
@@ -37,7 +36,7 @@ export function useDashboard() {
         });
 
         return () => unsubscribe();
-    }, [profile?.householdId]);
+    }, [profile?.householdId, profile?.uid]);
 
     const summary = useMemo(() => {
         let income = 0;

@@ -40,11 +40,18 @@ export function useGoals() {
         return () => unsubscribe();
     }, [profile?.householdId, profile?.uid]);
 
+    // Helper to remove undefined fields which Firestore rejects
+    const cleanData = (data: Record<string, unknown>) => {
+        const clean = { ...data };
+        Object.keys(clean).forEach(key => clean[key] === undefined && delete clean[key]);
+        return clean;
+    };
+
     const addGoal = async (data: Omit<FinancialGoal, 'id' | 'userId' | 'householdId' | 'createdAt'>) => {
         if (!profile?.householdId || !profile?.uid) return;
 
         await addDoc(collection(db, 'goals'), {
-            ...data,
+            ...cleanData(data),
             householdId: profile.householdId,
             userId: profile.uid,
             createdAt: serverTimestamp()
@@ -53,7 +60,7 @@ export function useGoals() {
 
     const updateGoal = async (id: string, data: Partial<FinancialGoal>) => {
         const docRef = doc(db, 'goals', id);
-        await updateDoc(docRef, { ...data });
+        await updateDoc(docRef, cleanData(data));
     };
 
     const deleteGoal = async (id: string) => {

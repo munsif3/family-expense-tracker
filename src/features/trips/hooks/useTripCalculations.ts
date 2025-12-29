@@ -1,8 +1,7 @@
 import { useMemo } from 'react';
-import { TripExpense, TripFund, TripReturn, ExpenseCategory } from '../types';
-import { Timestamp, collection, query, where, getDocs, addDoc, updateDoc, doc } from 'firebase/firestore';
+import { TripExpense, TripFund, TripReturn } from '../types';
+import { Timestamp, collection, query, where, getDocs, addDoc, updateDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
-import { useAuth } from '@/features/auth/AuthContext';
 
 export function useTripCalculations(
     funds: TripFund[],

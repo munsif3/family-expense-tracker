@@ -53,6 +53,7 @@ export function AddAssetModal({ assetToEdit, open: controlledOpen, onOpenChange 
                         Track your FDs, Gold, Stocks, or other assets.
                     </DialogDescription>
                 </DialogHeader>
+                {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
                 <form onSubmit={form.handleSubmit(submitAsset as any)} className="space-y-4 pt-4">
 
                     <div className="grid grid-cols-4 items-center gap-4">

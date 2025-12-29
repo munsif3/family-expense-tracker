@@ -4,7 +4,7 @@ import { Transaction } from '@/types';
 import { ResponsiveContainer, AreaChart, Area, XAxis, YAxis, Tooltip, CartesianGrid } from 'recharts';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { formatCurrency } from '@/lib/utils';
-import { format, parseISO } from 'date-fns';
+import { format } from 'date-fns';
 import { useMemo } from 'react';
 
 interface TrendChartProps {
@@ -57,7 +57,7 @@ export function TrendChart({ transactions, currency }: TrendChartProps) {
                                 <XAxis dataKey="date" tick={{ fontSize: 12 }} axisLine={false} tickLine={false} minTickGap={30} />
                                 <YAxis hide />
                                 <Tooltip
-                                    formatter={(value: any) => formatCurrency(value, currency)}
+                                    formatter={(value: number | undefined) => formatCurrency(value || 0, currency)}
                                     contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }}
                                 />
                                 <Area type="monotone" dataKey="amount" stroke="#10b981" fillOpacity={1} fill="url(#colorAmount)" />

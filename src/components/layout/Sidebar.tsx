@@ -16,6 +16,7 @@ const NAV_ITEMS = [
     { name: 'Savings', href: '/savings', icon: PiggyBank },
     { name: 'Budget', href: '/budget', icon: PieChart },
     { name: 'Goals', href: '/goals', icon: Trophy },
+
     { name: 'Reports', href: '/reports', icon: FileText },
     { name: 'Calendar', href: '/calendar', icon: Calendar },
     { name: 'Subscriptions', href: '/subscriptions', icon: CalendarClock },

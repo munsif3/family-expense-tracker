@@ -1,14 +1,12 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useAuth } from '@/features/auth/AuthContext';
-import { collection, query, where, orderBy, onSnapshot, limit } from 'firebase/firestore';
-import { db } from '@/lib/firebase';
+import { orderBy, onSnapshot, limit } from 'firebase/firestore';
 import { createSecureQuery } from '@/lib/firestoreUtils';
 import { Transaction } from '@/types';
 
 export function useTransactionsList() {
     const { profile } = useAuth();
     const [transactions, setTransactions] = useState<Transaction[]>([]);
-    const [filtered, setFiltered] = useState<Transaction[]>([]);
     const [loading, setLoading] = useState(true);
 
     // Filters
@@ -44,8 +42,8 @@ export function useTransactionsList() {
         return () => unsubscribe();
     }, [profile?.householdId]);
 
-    // Client-side filtering
-    useEffect(() => {
+    // Client-side filtering via useMemo
+    const filtered = useMemo(() => {
         let result = transactions;
 
         // View Mode Filter
@@ -53,8 +51,6 @@ export function useTransactionsList() {
             result = result.filter(t => !t.isPersonal);
         } else {
             // Personal: Only show my personal expenses
-            // Note: If functionality to see *other's* personal expenses is needed, this logic might change.
-            // But usually "Personal" tab means "My Personal Stuff".
             result = result.filter(t => t.isPersonal && t.spentBy === profile?.uid);
         }
 
@@ -70,7 +66,7 @@ export function useTransactionsList() {
             result = result.filter(t => t.categoryName === categoryFilter);
         }
 
-        setFiltered(result);
+        return result;
     }, [search, categoryFilter, transactions, viewMode, profile?.uid]);
 
     // Derive unique categories for filter

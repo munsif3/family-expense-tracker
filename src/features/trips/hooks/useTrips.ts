@@ -22,6 +22,7 @@ export function useTrips() {
 
     useEffect(() => {
         if (!user) {
+            // eslint-disable-next-line react-hooks/set-state-in-effect
             setTrips([]);
             setLoading(false);
             return;

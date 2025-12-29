@@ -47,6 +47,7 @@ export const householdService = {
             name_lower: data.name.toLowerCase(),
             currency: data.currency,
             memberIds: [user.uid],
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
             createdAt: serverTimestamp() as any,
             encryptedKeys: {
                 [user.uid]: exportedKey

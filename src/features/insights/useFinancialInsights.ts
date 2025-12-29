@@ -1,10 +1,10 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useAuth } from '@/features/auth/AuthContext';
-import { collection, query, where, orderBy, onSnapshot } from 'firebase/firestore';
-import { db } from '@/lib/firebase';
+import { Timestamp, where, orderBy, onSnapshot } from 'firebase/firestore';
+
 import { createSecureQuery } from '@/lib/firestoreUtils';
 import { Transaction } from '@/types';
-import { startOfMonth, subMonths, isBefore, endOfMonth } from 'date-fns';
+import { startOfMonth, subMonths } from 'date-fns';
 import { useBudget } from '@/features/budget/useBudget';
 
 export interface Insight {
@@ -16,11 +16,13 @@ export interface Insight {
     priority: number; // 1 (High) to 3 (Low)
 }
 
-const toDate = (val: any): Date => {
+const toDate = (val: Date | Timestamp | string | number | null | undefined): Date => {
     if (!val) return new Date(); // Fallback
     if (val instanceof Date) return val;
-    if (typeof val.toDate === 'function') return val.toDate(); // Firestore Timestamp
-    return new Date(val); // String or number
+    if (val instanceof Timestamp) return val.toDate();
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    if (typeof (val as any).toDate === 'function') return (val as any).toDate(); // Safety fallback
+    return new Date(val as string | number);
 };
 
 export function useFinancialInsights() {
@@ -55,7 +57,7 @@ export function useFinancialInsights() {
         });
 
         return () => unsubscribe();
-    }, [profile?.householdId]);
+    }, [profile?.householdId, profile?.uid]);
 
     const insights = useMemo(() => {
         if (loading || transactions.length === 0) return [];

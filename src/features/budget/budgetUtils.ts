@@ -45,7 +45,7 @@ export function calculateAnnualStatus(
         const spent = annualSpendMap[name] || 0;
 
         // Get monthly budget: check year override first, then fall back to default
-        let budgetMonthly = cat?.budgets?.[selectedYear] ?? cat?.budgetMonthly ?? 0;
+        const budgetMonthly = cat?.budgets?.[selectedYear] ?? cat?.budgetMonthly ?? 0;
 
         const budgetAnnual = budgetMonthly * 12;
         const percent = budgetAnnual > 0 ? (spent / budgetAnnual) * 100 : (spent > 0 ? 100 : 0);

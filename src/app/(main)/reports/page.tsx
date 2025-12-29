@@ -6,7 +6,7 @@ import { MonthlyStatement } from '@/features/reports/MonthlyStatement';
 import { useMonthlyStatement } from '@/features/reports/useMonthlyStatement';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Card, CardContent } from '@/components/ui/card';
-import { FileText, Calendar } from 'lucide-react';
+import { Calendar } from 'lucide-react';
 
 const MONTHS = [
     'January', 'February', 'March', 'April', 'May', 'June',

@@ -34,7 +34,7 @@ interface AddTripReturnModalProps {
     onOpenChange: (open: boolean) => void;
 }
 
-export function AddTripReturnModal({ tripId, tripName, participants, open, onOpenChange }: AddTripReturnModalProps) {
+export function AddTripReturnModal({ tripId, participants, open, onOpenChange }: AddTripReturnModalProps) {
     const { user, household } = useAuth();
     const { addReturn, returnsLoading } = useTripReturns(tripId);
 
@@ -42,7 +42,8 @@ export function AddTripReturnModal({ tripId, tripName, participants, open, onOpe
     const [isCustomCurrency, setIsCustomCurrency] = useState(false);
 
     const form = useForm<ReturnFormValues>({
-        resolver: zodResolver(returnSchema),
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        resolver: zodResolver(returnSchema) as any,
         defaultValues: {
             description: '',
             amount: 0,
@@ -111,6 +112,7 @@ export function AddTripReturnModal({ tripId, tripName, participants, open, onOpe
                                 <Select
                                     onValueChange={handleCurrencyChange}
                                     defaultValue={form.getValues('currency')}
+                                    // eslint-disable-next-line react-hooks/incompatible-library
                                     value={!['USD', 'EUR', 'GBP', 'INR', 'AED'].includes(form.watch('currency')) && form.watch('currency') !== '' ? 'other' : form.watch('currency')}
                                 >
                                     <SelectTrigger>

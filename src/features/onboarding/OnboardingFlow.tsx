@@ -4,14 +4,13 @@
 import { useForm, SubmitHandler } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
-import { useAuth } from '@/features/auth/AuthContext';
+
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Loader2, Home, AlertCircle } from 'lucide-react';
-import { Household } from '@/types';
 import { useOnboarding } from './useOnboarding';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 
@@ -55,7 +54,7 @@ export function OnboardingFlow() {
                     </div>
                     <CardTitle className="text-center text-2xl">Welcome to Family Finance</CardTitle>
                     <CardDescription className="text-center">
-                        Let's set up your fast and secure family finance hub.
+                        Let&apos;s set up your fast and secure family finance hub.
                     </CardDescription>
                 </CardHeader>
                 <CardContent>

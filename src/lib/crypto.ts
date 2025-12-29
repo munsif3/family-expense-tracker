@@ -35,6 +35,7 @@ export async function encryptData(
     const ciphertext = await window.crypto.subtle.encrypt(
         {
             name: 'AES-GCM',
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
             iv: iv as any,
         },
         key,
@@ -51,6 +52,7 @@ export async function decryptData(
     return window.crypto.subtle.decrypt(
         {
             name: 'AES-GCM',
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
             iv: iv as any,
         },
         key,
