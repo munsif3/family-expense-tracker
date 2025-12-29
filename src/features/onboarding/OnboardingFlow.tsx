@@ -10,9 +10,10 @@ import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Loader2, Home, AlertCircle } from 'lucide-react';
+import { Home, AlertCircle } from 'lucide-react';
 import { useOnboarding } from './useOnboarding';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 
 const onboardingSchema = z.object({
     householdName: z.string().min(2, "Household name must be at least 2 characters"),
@@ -102,7 +103,7 @@ export function OnboardingFlow() {
                         )}
 
                         <Button type="submit" className="w-full mt-4" disabled={loading}>
-                            {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                            {loading && <LoadingSpinner size="sm" className="mr-2" />}
                             Create (or Join) Household
                         </Button>
                     </form>
@@ -133,7 +134,7 @@ export function OnboardingFlow() {
                     <DialogFooter>
                         <Button variant="ghost" onClick={reset}>Cancel</Button>
                         <Button onClick={joinHousehold} disabled={loading}>
-                            {loading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : "Yes, Join Household"}
+                            {loading ? <LoadingSpinner size="sm" className="mr-2" /> : "Yes, Join Household"}
                         </Button>
                     </DialogFooter>
                 </DialogContent>

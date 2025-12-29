@@ -8,6 +8,9 @@ import { Timestamp } from 'firebase/firestore';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { DatePicker } from '@/components/ui/date-picker';
+import { Controller } from 'react-hook-form';
+import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import {
     Dialog,
     DialogContent,
@@ -29,9 +32,15 @@ const tripSchema = z.object({
     tripName: z.string().min(3, "Trip name is required"),
     location: z.string().min(2, "Location is required"),
     tripType: z.enum(['local', 'international']),
-    startDate: z.string().refine((val) => !isNaN(Date.parse(val)), "Invalid start date"),
-    endDate: z.string().refine((val) => !isNaN(Date.parse(val)), "Invalid end date"),
-}).refine((data) => new Date(data.startDate) <= new Date(data.endDate), {
+    startDate: z.date({
+        required_error: "Start date is required",
+        invalid_type_error: "Invalid start date"
+    }),
+    endDate: z.date({
+        required_error: "End date is required",
+        invalid_type_error: "Invalid end date"
+    }),
+}).refine((data) => data.startDate <= data.endDate, {
     message: "End date must be after start date",
     path: ["endDate"],
 });
@@ -47,7 +56,7 @@ export function AddTripModal({ open, onOpenChange }: AddTripModalProps) {
     const { createTrip } = useTrips();
     const [isSubmitting, setIsSubmitting] = useState(false);
 
-    const { register, handleSubmit, formState: { errors }, reset } = useForm<TripFormData>({
+    const { register, handleSubmit, formState: { errors }, reset, control } = useForm<TripFormData>({
         resolver: zodResolver(tripSchema),
         defaultValues: {
             tripType: 'international'
@@ -61,8 +70,8 @@ export function AddTripModal({ open, onOpenChange }: AddTripModalProps) {
                 tripName: data.tripName,
                 location: data.location,
                 tripType: data.tripType,
-                startDate: Timestamp.fromDate(new Date(data.startDate)),
-                endDate: Timestamp.fromDate(new Date(data.endDate)),
+                startDate: Timestamp.fromDate(data.startDate),
+                endDate: Timestamp.fromDate(data.endDate),
                 accommodations: [],
                 usedCurrencies: ['USD'], // Default, user can change later
                 participantIds: [], // Defaults to creator in hook
@@ -113,15 +122,27 @@ export function AddTripModal({ open, onOpenChange }: AddTripModalProps) {
                     </div>
 
                     <div className="grid grid-cols-2 gap-4">
-                        <div className="space-y-2">
+                        <div className="space-y-2 flex flex-col">
                             <Label htmlFor="startDate">Start Date</Label>
-                            <Input id="startDate" type="date" {...register("startDate")} />
+                            <Controller
+                                control={control}
+                                name="startDate"
+                                render={({ field }) => (
+                                    <DatePicker date={field.value} setDate={field.onChange} />
+                                )}
+                            />
                             {errors.startDate && <p className="text-red-500 text-xs">{errors.startDate.message}</p>}
                         </div>
 
-                        <div className="space-y-2">
+                        <div className="space-y-2 flex flex-col">
                             <Label htmlFor="endDate">End Date</Label>
-                            <Input id="endDate" type="date" {...register("endDate")} />
+                            <Controller
+                                control={control}
+                                name="endDate"
+                                render={({ field }) => (
+                                    <DatePicker date={field.value} setDate={field.onChange} />
+                                )}
+                            />
                             {errors.endDate && <p className="text-red-500 text-xs">{errors.endDate.message}</p>}
                         </div>
                     </div>
@@ -129,6 +150,7 @@ export function AddTripModal({ open, onOpenChange }: AddTripModalProps) {
                     <DialogFooter>
                         <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
                         <Button type="submit" disabled={isSubmitting}>
+                            {isSubmitting && <LoadingSpinner size="sm" className="mr-2" />}
                             {isSubmitting ? "Creating..." : "Create Trip"}
                         </Button>
                     </DialogFooter>

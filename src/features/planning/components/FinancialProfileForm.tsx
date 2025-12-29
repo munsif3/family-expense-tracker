@@ -3,7 +3,9 @@
 import React, { useState, useEffect } from 'react';
 import { FinancialProfile } from '@/types';
 import { useAuth } from '@/features/auth/AuthContext';
-import { Loader2, Info, PieChart } from 'lucide-react';
+import { Info, PieChart } from 'lucide-react';
+import { Input } from '@/components/ui/input';
+import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 
 interface Props {
     currentProfile: FinancialProfile | null;
@@ -82,11 +84,10 @@ export const FinancialProfileForm: React.FC<Props> = ({ currentProfile, onSave, 
             <div className="grid gap-4 md:grid-cols-2">
                 <div className="space-y-2">
                     <label className="text-sm font-medium">Monthly Net Income</label>
-                    <input
+                    <Input
                         type="number"
                         value={totalIncome}
                         onChange={(e) => setTotalIncome(Number(e.target.value))}
-                        className="w-full rounded-md border p-2"
                         placeholder="0.00"
                         required
                     />
@@ -94,32 +95,29 @@ export const FinancialProfileForm: React.FC<Props> = ({ currentProfile, onSave, 
 
                 <div className="space-y-2">
                     <label className="text-sm font-medium">Fixed Monthly Commitments</label>
-                    <input
+                    <Input
                         type="number"
                         value={fixedCommitments}
                         onChange={(e) => setFixedCommitments(Number(e.target.value))}
-                        className="w-full rounded-md border p-2"
                     />
                 </div>
 
                 <div className="space-y-2">
                     <label className="text-sm font-medium">Variable/Lifestyle Commitments</label>
-                    <input
+                    <Input
                         type="number"
                         value={variableCommitments}
                         onChange={(e) => setVariableCommitments(Number(e.target.value))}
-                        className="w-full rounded-md border p-2"
                     />
                 </div>
 
                 <div className="space-y-2">
                     <label className="text-sm font-medium">Annual Income Growth (%)</label>
                     <div className="flex items-center gap-2">
-                        <input
+                        <Input
                             type="number"
                             value={growthRate}
                             onChange={(e) => setGrowthRate(Number(e.target.value))}
-                            className="w-full rounded-md border p-2"
                             placeholder="e.g. 5"
                             min="0"
                         />
@@ -130,11 +128,10 @@ export const FinancialProfileForm: React.FC<Props> = ({ currentProfile, onSave, 
                 <div className="space-y-2">
                     <label className="text-sm font-medium">Expected Annual Bonus</label>
                     <div className="flex items-center gap-2">
-                        <input
+                        <Input
                             type="number"
                             value={bonus}
                             onChange={(e) => setBonus(Number(e.target.value))}
-                            className="w-full rounded-md border p-2"
                             placeholder="e.g. 500000"
                             min="0"
                         />
@@ -145,11 +142,11 @@ export const FinancialProfileForm: React.FC<Props> = ({ currentProfile, onSave, 
                 <div className="space-y-2">
                     <label className="text-sm font-medium">Target Monthly Savings</label>
                     <div className="flex items-center gap-2">
-                        <input
+                        <Input
                             type="number"
                             value={savingsCapacity}
                             onChange={(e) => setSavingsCapacity(Number(e.target.value))}
-                            className="w-full rounded-md border p-2 bg-accent/20 font-bold"
+                            className="bg-accent/20 font-bold"
                             placeholder="0.00"
                         />
                         <span className="text-xs text-muted-foreground">
@@ -176,33 +173,33 @@ export const FinancialProfileForm: React.FC<Props> = ({ currentProfile, onSave, 
                     <div className="space-y-2 rounded-md border p-3 border-l-4 border-l-green-500 bg-green-50/50">
                         <label className="text-sm font-medium text-green-900">Conservative (%)</label>
                         <p className="text-xs text-muted-foreground mb-2">Savings, FDs. Safety first.</p>
-                        <input
+                        <Input
                             type="number"
                             value={allocation.conservative}
                             onChange={(e) => handleAllocationChange('conservative', e.target.value)}
-                            className="w-full rounded border p-2 font-mono text-right"
+                            className="font-mono text-right"
                             min="0" max="100"
                         />
                     </div>
                     <div className="space-y-2 rounded-md border p-3 border-l-4 border-l-yellow-500 bg-yellow-50/50">
                         <label className="text-sm font-medium text-yellow-900">Moderate (%)</label>
                         <p className="text-xs text-muted-foreground mb-2">Funds, Debt. Balanced.</p>
-                        <input
+                        <Input
                             type="number"
                             value={allocation.moderate}
                             onChange={(e) => handleAllocationChange('moderate', e.target.value)}
-                            className="w-full rounded border p-2 font-mono text-right"
+                            className="font-mono text-right"
                             min="0" max="100"
                         />
                     </div>
                     <div className="space-y-2 rounded-md border p-3 border-l-4 border-l-red-500 bg-red-50/50">
                         <label className="text-sm font-medium text-red-900">Aggressive (%)</label>
                         <p className="text-xs text-muted-foreground mb-2">Stocks, Crypto. High Growth.</p>
-                        <input
+                        <Input
                             type="number"
                             value={allocation.aggressive}
                             onChange={(e) => handleAllocationChange('aggressive', e.target.value)}
-                            className="w-full rounded border p-2 font-mono text-right"
+                            className="font-mono text-right"
                             min="0" max="100"
                         />
                     </div>
@@ -228,7 +225,7 @@ export const FinancialProfileForm: React.FC<Props> = ({ currentProfile, onSave, 
                     className="flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
                     disabled={loading || totalAllocation !== 100}
                 >
-                    {loading && <Loader2 className="h-4 w-4 animate-spin" />}
+                    {loading && <LoadingSpinner size="sm" className="mr-2" />}
                     Save Profile
                 </button>
             </div>

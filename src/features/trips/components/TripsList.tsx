@@ -8,6 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Plus, MapPin, Calendar } from 'lucide-react';
 import { AddTripModal } from './AddTripModal';
 import { format } from 'date-fns';
+import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 
 export function TripsList() {
     const { trips, loading, error } = useTrips();
@@ -18,7 +19,7 @@ export function TripsList() {
         router.push(`/trips/${id}`);
     };
 
-    if (loading) return <div className="p-4 text-center">Loading trips...</div>;
+    if (loading) return <LoadingSpinner size="lg" className="py-12" text="Loading trips..." />;
     if (error) return <div className="p-4 text-red-500">{error}</div>;
 
     return (

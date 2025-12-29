@@ -18,6 +18,8 @@ import {
     DialogHeader,
     DialogTitle,
 } from '@/components/ui/dialog';
+import { DatePicker } from '@/components/ui/date-picker';
+import { Controller } from 'react-hook-form';
 import {
     Select,
     SelectContent,
@@ -33,7 +35,10 @@ import { useAuth } from '@/features/auth/AuthContext';
 import { ExpenseCategory, TripExpense } from '../types';
 
 const expenseSchema = z.object({
-    date: z.string(),
+    date: z.date({
+        required_error: "Date is required",
+        invalid_type_error: "Invalid date"
+    }),
     amount: z.number().positive(),
     currency: z.string().min(1),
     conversionRate: z.number().positive(),
@@ -70,10 +75,10 @@ export function AddTripExpenseModal({ tripId, tripName, participants: tripPartic
     const [isCustomMode, setIsCustomMode] = useState(false);
     const [isCustomCurrency, setIsCustomCurrency] = useState(false);
 
-    const { register, handleSubmit, formState: { errors }, watch, setValue, reset } = useForm<ExpenseFormData>({
+    const { register, handleSubmit, formState: { errors }, watch, setValue, reset, control } = useForm<ExpenseFormData>({
         resolver: zodResolver(expenseSchema),
         defaultValues: {
-            date: new Date().toISOString().split('T')[0],
+            date: new Date(),
             mode: 'card',
             currency: 'USD',
             conversionRate: 1,
@@ -92,7 +97,7 @@ export function AddTripExpenseModal({ tripId, tripName, participants: tripPartic
             // 1. Add Expense
             await addExpense({
                 tripId,
-                date: Timestamp.fromDate(new Date(data.date)),
+                date: Timestamp.fromDate(data.date),
                 amount: data.amount,
                 currency: data.currency,
                 conversionRate: data.conversionRate,
@@ -169,9 +174,15 @@ export function AddTripExpenseModal({ tripId, tripName, participants: tripPartic
                 </DialogHeader>
                 <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
                     <div className="grid grid-cols-2 gap-4">
-                        <div className="space-y-2">
+                        <div className="space-y-2 flex flex-col">
                             <Label htmlFor="date">Date</Label>
-                            <Input id="date" type="date" {...register("date")} />
+                            <Controller
+                                control={control}
+                                name="date"
+                                render={({ field }) => (
+                                    <DatePicker date={field.value} setDate={field.onChange} />
+                                )}
+                            />
                         </div>
                         <div className="space-y-2">
                             <Label htmlFor="category">Category</Label>

@@ -9,8 +9,9 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { format } from 'date-fns';
-import { Loader2, Plus, ArrowLeft } from 'lucide-react';
+import { Plus, ArrowLeft } from 'lucide-react';
 import { useRouter } from 'next/navigation';
+import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 
 import { AddTripFundModal } from './AddTripFundModal';
 import { AddTripExpenseModal } from './AddTripExpenseModal';
@@ -43,7 +44,7 @@ export function TripDetail({ id }: TripDetailProps) {
 
     if (tripLoading || fundsLoading || expensesLoading || returnsLoading || participantsLoading) {
         console.log("TripDetail: Loading...");
-        return <div className="flex justify-center items-center h-full"><Loader2 className="animate-spin h-8 w-8" /></div>;
+        return <LoadingSpinner fullScreen />;
     }
 
     console.log("TripDetail: All loaded. Rendering content. Trip:", trip?.tripName);

@@ -4,9 +4,12 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Loader2, Plus } from 'lucide-react';
+import { Plus } from 'lucide-react';
 import { Asset } from '@/types';
 import { useAddAsset } from './useAddAsset';
+import { DatePicker } from '@/components/ui/date-picker';
+import { Controller } from 'react-hook-form';
+import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 
 interface AddAssetModalProps {
     assetToEdit?: Asset;
@@ -131,7 +134,15 @@ export function AddAssetModal({ assetToEdit, open: controlledOpen, onOpenChange 
 
                     <div className="grid grid-cols-4 items-center gap-4">
                         <Label htmlFor="date" className="text-right">Buy Date</Label>
-                        <Input id="date" type="date" className="col-span-3" {...form.register('buyDate')} />
+                        <div className="col-span-3">
+                            <Controller
+                                control={form.control}
+                                name="buyDate"
+                                render={({ field }) => (
+                                    <DatePicker date={field.value ? new Date(field.value) : undefined} setDate={(date) => field.onChange(date ? date.toISOString().split('T')[0] : '')} />
+                                )}
+                            />
+                        </div>
                     </div>
 
                     {/* Dynamic Fields */}
@@ -147,7 +158,15 @@ export function AddAssetModal({ assetToEdit, open: controlledOpen, onOpenChange 
                             </div>
                             <div className="grid grid-cols-4 items-center gap-4">
                                 <Label htmlFor="maturityDate" className="text-right">Maturity Date</Label>
-                                <Input id="maturityDate" type="date" className="col-span-3" {...form.register('maturityDate')} />
+                                <div className="col-span-3">
+                                    <Controller
+                                        control={form.control}
+                                        name="maturityDate"
+                                        render={({ field }) => (
+                                            <DatePicker date={field.value ? new Date(field.value) : undefined} setDate={(date) => field.onChange(date ? date.toISOString().split('T')[0] : '')} />
+                                        )}
+                                    />
+                                </div>
                             </div>
                         </>
                     )}
@@ -199,7 +218,15 @@ export function AddAssetModal({ assetToEdit, open: controlledOpen, onOpenChange 
                             </div>
                             <div className="grid grid-cols-4 items-center gap-4">
                                 <Label htmlFor="startDate" className="text-right">Start Date</Label>
-                                <Input id="startDate" type="date" className="col-span-3" {...form.register('startDate')} />
+                                <div className="col-span-3">
+                                    <Controller
+                                        control={form.control}
+                                        name="startDate"
+                                        render={({ field }) => (
+                                            <DatePicker date={field.value ? new Date(field.value) : undefined} setDate={(date) => field.onChange(date ? date.toISOString().split('T')[0] : '')} />
+                                        )}
+                                    />
+                                </div>
                             </div>
                         </>
                     )}
@@ -280,7 +307,7 @@ export function AddAssetModal({ assetToEdit, open: controlledOpen, onOpenChange 
                     )}
 
                     <Button type="submit" className="w-full" disabled={loading}>
-                        {loading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : (assetToEdit ? 'Update Asset' : 'Save Asset')}
+                        {loading ? <LoadingSpinner size="sm" className="mr-2" /> : (assetToEdit ? 'Update Asset' : 'Save Asset')}
                     </Button>
                 </form>
             </DialogContent>

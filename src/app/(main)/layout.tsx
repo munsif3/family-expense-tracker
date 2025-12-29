@@ -1,9 +1,9 @@
 'use client';
 
 import { useEffect } from 'react';
+import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/features/auth/AuthContext';
-import { Loader2 } from 'lucide-react';
 import { Sidebar } from '@/components/layout/Sidebar';
 import { MobileHeader } from '@/components/layout/MobileHeader';
 import { OnboardingFlow } from '@/features/onboarding/OnboardingFlow';
@@ -27,11 +27,7 @@ export default function DashboardLayout({
     }, [user, loading, router]);
 
     if (loading || !user) {
-        return (
-            <div className="flex items-center justify-center min-h-screen">
-                <Loader2 className="h-8 w-8 animate-spin text-primary" />
-            </div>
-        );
+        return <LoadingSpinner fullScreen text="Initializing..." />;
     }
 
     // Check if user has a household

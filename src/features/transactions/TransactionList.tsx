@@ -13,6 +13,7 @@ import { deleteDoc, doc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { groupTransactionsByDate } from './transactionUtils';
+import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 
 interface TransactionListProps {
     transactions: Transaction[];
@@ -25,7 +26,7 @@ export function TransactionList({ transactions, loading, compact }: TransactionL
     const [deletingTx, setDeletingTx] = useState<Transaction | null>(null);
 
     if (loading) {
-        return <div className="text-center py-4">Loading transactions...</div>;
+        return <LoadingSpinner size="md" className="py-8" text="Loading transactions..." />;
     }
 
     if (transactions.length === 0) {

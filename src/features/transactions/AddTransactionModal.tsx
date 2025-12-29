@@ -7,10 +7,12 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Loader2 } from 'lucide-react';
 import { Transaction, UserProfile } from '@/types';
 import { useAddTransaction } from './useAddTransaction';
 import { CATEGORIES } from '@/lib/constants';
+import { DatePicker } from '@/components/ui/date-picker';
+import { Controller } from 'react-hook-form';
+import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 
 interface AddTransactionModalProps {
     transactionToEdit?: Transaction;
@@ -71,9 +73,18 @@ export function AddTransactionModal({ transactionToEdit, open, onOpenChange }: A
                                 </SelectContent>
                             </Select>
                         </div>
-                        <div className="space-y-2">
+                        <div className="space-y-2 flex flex-col">
                             <Label>Date</Label>
-                            <Input type="date" {...form.register('date')} />
+                            <Controller
+                                control={form.control}
+                                name="date"
+                                render={({ field }) => (
+                                    <DatePicker
+                                        date={field.value ? new Date(field.value) : undefined}
+                                        setDate={field.onChange}
+                                    />
+                                )}
+                            />
                         </div>
                     </div>
 
@@ -178,7 +189,7 @@ export function AddTransactionModal({ transactionToEdit, open, onOpenChange }: A
                     )}
 
                     <Button type="submit" className="w-full" disabled={loading}>
-                        {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                        {loading && <LoadingSpinner size="sm" className="mr-2" />}
                         {transactionToEdit ? 'Update Transaction' : 'Save Transaction'}
                     </Button>
                 </form>

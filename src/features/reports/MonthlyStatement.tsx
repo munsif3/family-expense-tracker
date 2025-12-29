@@ -1,8 +1,8 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Loader2 } from 'lucide-react';
 import { formatCurrency } from '@/lib/utils';
 import { StatementData } from './useMonthlyStatement';
 import { Progress } from '@/components/ui/progress';
+import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 
 interface MonthlyStatementProps {
     statement: StatementData;
@@ -14,7 +14,7 @@ export function MonthlyStatement({ statement, currency, loading }: MonthlyStatem
     if (loading) {
         return (
             <div className="flex h-64 items-center justify-center">
-                <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                <LoadingSpinner />
             </div>
         );
     }

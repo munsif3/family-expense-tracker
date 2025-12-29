@@ -12,7 +12,10 @@ const transactionSchema = z.object({
     amount: z.string().min(1, "Amount is required"),
     categoryId: z.string().min(1, "Category is required"),
     description: z.string().min(1, "Description is required"),
-    date: z.string().min(1, "Date is required"),
+    date: z.date({
+        required_error: "Date is required",
+        invalid_type_error: "Date must be a valid date"
+    }),
     isRecurring: z.boolean().optional(),
     interval: z.enum(['weekly', 'monthly', 'yearly']).optional(),
     spentBy: z.string().optional(),
@@ -33,7 +36,7 @@ export function useAddTransaction(
         resolver: zodResolver(transactionSchema),
         defaultValues: {
             type: 'expense',
-            date: new Date().toISOString().split('T')[0],
+            date: new Date(),
             categoryId: '',
             amount: '',
             description: '',
@@ -49,7 +52,7 @@ export function useAddTransaction(
                 amount: transactionToEdit.amount.toString(),
                 categoryId: transactionToEdit.categoryId,
                 description: transactionToEdit.description,
-                date: transactionToEdit.date.toDate().toISOString().split('T')[0],
+                date: transactionToEdit.date.toDate(),
                 spentBy: transactionToEdit.spentBy,
                 isPersonal: transactionToEdit.isPersonal || false,
                 isRecurring: false, // Editing recurrence not supported in this modal yet
@@ -61,7 +64,7 @@ export function useAddTransaction(
                     amount: '',
                     categoryId: '',
                     description: '',
-                    date: new Date().toISOString().split('T')[0],
+                    date: new Date(),
                     isRecurring: false,
                     interval: 'monthly',
                 });
@@ -81,7 +84,7 @@ export function useAddTransaction(
                 categoryId: data.categoryId,
                 categoryName: CATEGORIES.find(c => c.id === data.categoryId)?.name || 'Other',
                 description: data.description,
-                date: new Date(data.date),
+                date: data.date,
                 spentBy: data.spentBy || user.uid, // Fallback to current user if missing
                 isPersonal: data.isPersonal || false,
             };

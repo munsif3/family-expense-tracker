@@ -3,13 +3,15 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { FinancialGoal } from '@/types';
-import { Loader2 } from 'lucide-react';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { useGoalForm } from './useGoalForm';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Asset } from '@/types';
 import { Checkbox } from '@/components/ui/checkbox';
+import { DatePicker } from '@/components/ui/date-picker';
+import { Controller } from 'react-hook-form';
+import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 
 interface AddGoalModalProps {
     open: boolean;
@@ -151,23 +153,14 @@ export function AddGoalModal({ open, onOpenChange, onSave, initialData, assets }
                         </div>
                     </div>
 
-                    <div className="space-y-2">
+                    <div className="space-y-2 flex flex-col">
                         <Label>Target Date</Label>
-                        <Input
-                            type="date"
-                            value={deadline ? format(deadline, 'yyyy-MM-dd') : ''}
-                            onChange={(e) => {
-                                // Native property returns Date object
-                                // Adjust for timezone if needed, usually valueAsDate is UTC, value is string YYYY-MM-DD
-                                // Better to use value string to avoid timezone shifts on simple dates
-                                const dateStr = e.target.value;
-                                if (dateStr) {
-                                    form.setValue('deadline', new Date(dateStr));
-                                } else {
-                                    form.setValue('deadline', undefined);
-                                }
-                            }}
-                            min={new Date().toISOString().split('T')[0]}
+                        <Controller
+                            control={form.control}
+                            name="deadline"
+                            render={({ field }) => (
+                                <DatePicker date={field.value ?? undefined} setDate={field.onChange} />
+                            )}
                         />
                     </div>
 
@@ -227,7 +220,7 @@ export function AddGoalModal({ open, onOpenChange, onSave, initialData, assets }
                             Cancel
                         </Button>
                         <Button type="submit" disabled={loading}>
-                            {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                            {loading && <LoadingSpinner size="sm" className="mr-2" />}
                             {loading ? 'Saving...' : (initialData ? 'Update Goal' : 'Save Goal')}
                         </Button>
                     </DialogFooter>

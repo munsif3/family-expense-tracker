@@ -10,9 +10,10 @@ import { TrendChart } from '@/features/dashboard/TrendChart';
 import { TransactionList } from '@/features/transactions/TransactionList';
 import { Card, CardContent, CardTitle, CardHeader } from '@/components/ui/card';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { ArrowDownLeft, ArrowUpRight, Wallet, Loader2 } from 'lucide-react';
+import { ArrowDownLeft, ArrowUpRight, Wallet } from 'lucide-react';
 import { formatCurrency } from '@/lib/utils';
 import { Tooltip } from '@/components/ui/tooltip';
+import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { useFinancialInsights } from '@/features/insights/useFinancialInsights';
 import { InsightsWidget } from '@/features/insights/InsightsWidget';
 
@@ -42,7 +43,7 @@ export default function DashboardPage() {
     if (loading) {
         return (
             <div className="flex h-96 items-center justify-center">
-                <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                <LoadingSpinner size="lg" text="Loading dashboard..." />
             </div>
         );
     }
