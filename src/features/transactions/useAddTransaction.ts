@@ -24,7 +24,8 @@ export type TransactionFormValues = z.infer<typeof transactionSchema>;
 export function useAddTransaction(
     transactionToEdit?: Transaction,
     open?: boolean,
-    onOpenChange?: (open: boolean) => void
+    onOpenChange?: (open: boolean) => void,
+    defaultDate?: Date
 ) {
     const { user, profile, household } = useAuth();
     const [loading, setLoading] = useState(false);
@@ -61,13 +62,13 @@ export function useAddTransaction(
                     amount: '',
                     categoryId: '',
                     description: '',
-                    date: new Date(),
+                    date: defaultDate || new Date(),
                     isRecurring: false,
                     interval: 'monthly',
                 });
             }
         }
-    }, [transactionToEdit, open, form]);
+    }, [transactionToEdit, open, form, defaultDate]);
 
     const submitTransaction = async (data: TransactionFormValues) => {
         if (!user || !profile?.householdId) return;

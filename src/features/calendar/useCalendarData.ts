@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/features/auth/AuthContext';
-import { where, getDocs, Timestamp, orderBy } from 'firebase/firestore';
+import { where, onSnapshot, Timestamp, orderBy } from 'firebase/firestore';
 
 import { createSecureQuery } from '@/lib/firestoreUtils';
 import { toJsDate } from '@/lib/utils';
@@ -23,70 +23,67 @@ export function useCalendarData(currentMonth: Date) {
     useEffect(() => {
         if (!profile?.householdId) return;
 
-        const fetchData = async () => {
-            setLoading(true);
-            try {
-                const start = startOfMonth(currentMonth);
-                const end = endOfMonth(currentMonth);
+        setLoading(true); // eslint-disable-line
 
-                const q = createSecureQuery({
-                    collectionName: 'transactions',
-                    householdId: profile.householdId || undefined,
-                    userId: profile.uid || undefined,
-                    constraints: [
-                        where('date', '>=', Timestamp.fromDate(start)),
-                        where('date', '<=', Timestamp.fromDate(end)),
-                        orderBy('date', 'desc')
-                    ]
-                });
+        const start = startOfMonth(currentMonth);
+        const end = endOfMonth(currentMonth);
 
-                const snapshot = await getDocs(q);
-                const transactions = snapshot.docs.map(doc => ({
-                    id: doc.id,
-                    ...doc.data(),
-                    // Safety check for date types
-                })) as Transaction[];
+        const q = createSecureQuery({
+            collectionName: 'transactions',
+            householdId: profile.householdId || undefined,
+            userId: profile.uid || undefined,
+            constraints: [
+                where('date', '>=', Timestamp.fromDate(start)),
+                where('date', '<=', Timestamp.fromDate(end)),
+                orderBy('date', 'desc')
+            ]
+        });
 
-                const map: Record<string, DailyData> = {};
-                let totalIncome = 0;
-                let totalExpense = 0;
+        const unsubscribe = onSnapshot(q, (snapshot) => {
+            const transactions = snapshot.docs.map(doc => ({
+                id: doc.id,
+                ...doc.data(),
+                // Safety check for date types
+            })) as Transaction[];
 
-                transactions.forEach(t => {
-                    // Convert Timestamp to Date
-                    const date = toJsDate(t.date);
-                    const dateKey = date.toDateString();
+            const map: Record<string, DailyData> = {};
+            let totalIncome = 0;
+            let totalExpense = 0;
 
-                    if (!map[dateKey]) {
-                        map[dateKey] = {
-                            date: date,
-                            income: 0,
-                            expense: 0,
-                            transactions: []
-                        };
-                    }
+            transactions.forEach(t => {
+                // Convert Timestamp to Date
+                const date = toJsDate(t.date);
+                const dateKey = date.toDateString();
 
-                    if (t.type === 'income') {
-                        map[dateKey].income += t.amount;
-                        totalIncome += t.amount;
-                    } else {
-                        map[dateKey].expense += t.amount;
-                        totalExpense += t.amount;
-                    }
+                if (!map[dateKey]) {
+                    map[dateKey] = {
+                        date: date,
+                        income: 0,
+                        expense: 0,
+                        transactions: []
+                    };
+                }
 
-                    map[dateKey].transactions.push({ ...t, date: date as unknown as Timestamp });
-                });
+                if (t.type === 'income') {
+                    map[dateKey].income += t.amount;
+                    totalIncome += t.amount;
+                } else {
+                    map[dateKey].expense += t.amount;
+                    totalExpense += t.amount;
+                }
 
-                setDailyMap(map);
-                setMonthlyStats({ income: totalIncome, expense: totalExpense });
+                map[dateKey].transactions.push({ ...t, date: date as unknown as Timestamp });
+            });
 
-            } catch (error) {
-                console.error("Error fetching calendar data:", error);
-            } finally {
-                setLoading(false);
-            }
-        };
+            setDailyMap(map);
+            setMonthlyStats({ income: totalIncome, expense: totalExpense });
+            setLoading(false);
+        }, (error) => {
+            console.error("Error fetching calendar data:", error);
+            setLoading(false);
+        });
 
-        fetchData();
+        return () => unsubscribe();
     }, [profile?.householdId, profile?.uid, currentMonth]); // Re-fetch when month changes
 
     return { dailyMap, monthlyStats, loading };

@@ -18,10 +18,11 @@ interface AddTransactionModalProps {
     transactionToEdit?: Transaction;
     open?: boolean; // Controlled open state
     onOpenChange?: (open: boolean) => void;
+    defaultDate?: Date;
 }
 
-export function AddTransactionModal({ transactionToEdit, open, onOpenChange }: AddTransactionModalProps) {
-    const { form, loading, submitTransaction } = useAddTransaction(transactionToEdit, !!open, onOpenChange || (() => { }));
+export function AddTransactionModal({ transactionToEdit, open, onOpenChange, defaultDate }: AddTransactionModalProps) {
+    const { form, loading, submitTransaction } = useAddTransaction(transactionToEdit, !!open, onOpenChange || (() => { }), defaultDate);
 
     const selectedType = form.watch('type');
     const filteredCategories = CATEGORIES.filter(c => c.type === selectedType);
