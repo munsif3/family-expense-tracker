@@ -1,6 +1,11 @@
-import { TripDetail } from '@/features/trips/components/TripDetail';
+import { TripDetailWrapper } from './TripDetailWrapper';
 
-export default async function TripDetailPage({ params }: { params: Promise<{ id: string }> }) {
-    const { id } = await params;
-    return <TripDetail id={id} />;
+export const dynamicParams = false;
+
+export async function generateStaticParams() {
+    return [{ id: 'test' }];
+}
+
+export default function TripDetailPage() {
+    return <TripDetailWrapper />;
 }
