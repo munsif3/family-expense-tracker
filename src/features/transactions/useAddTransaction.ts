@@ -12,10 +12,7 @@ const transactionSchema = z.object({
     amount: z.string().min(1, "Amount is required"),
     categoryId: z.string().min(1, "Category is required"),
     description: z.string().min(1, "Description is required"),
-    date: z.date({
-        required_error: "Date is required",
-        invalid_type_error: "Date must be a valid date"
-    }),
+    date: z.date(),
     isRecurring: z.boolean().optional(),
     interval: z.enum(['weekly', 'monthly', 'yearly']).optional(),
     spentBy: z.string().optional(),

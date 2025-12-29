@@ -35,10 +35,7 @@ import { useAuth } from '@/features/auth/AuthContext';
 import { ExpenseCategory, TripExpense } from '../types';
 
 const expenseSchema = z.object({
-    date: z.date({
-        required_error: "Date is required",
-        invalid_type_error: "Invalid date"
-    }),
+    date: z.date(),
     amount: z.number().positive(),
     currency: z.string().min(1),
     conversionRate: z.number().positive(),

@@ -66,7 +66,18 @@ export default function CalendarPage() {
                             month={viewMonth}
                             onMonthChange={setViewMonth}
                             className="rounded-none border-0 w-full h-full"
-                            renderDay={renderDayCell}
+                            components={{
+                                DayContent: ({ date }) => (
+                                    <div className="flex flex-col items-center justify-start h-full w-full min-h-[40px]">
+                                        <span>{date.getDate()}</span>
+                                        {renderDayCell(date)}
+                                    </div>
+                                )
+                            }}
+                            classNames={{
+                                day: "h-auto w-full aspect-square p-1 font-normal aria-selected:opacity-100",
+                                cell: "h-auto w-full p-0 relative [&:has([aria-selected].day-range-end)]:rounded-r-md [&:has([aria-selected].day-outside)]:bg-accent/50 [&:has([aria-selected])]:bg-accent first:[&:has([aria-selected])]:rounded-l-md last:[&:has([aria-selected])]:rounded-r-md focus-within:relative focus-within:z-20",
+                            }}
                         />
                     </CardContent>
                 </Card>

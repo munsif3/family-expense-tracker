@@ -21,6 +21,21 @@ interface DatePickerProps {
 }
 
 export function DatePicker({ date, setDate, className, placeholder = "Pick a date" }: DatePickerProps) {
+    const [month, setMonth] = React.useState<Date>(date || new Date());
+
+    React.useEffect(() => {
+        if (date) {
+            setMonth(date);
+        }
+    }, [date]);
+
+    const handleSelect = (newDate: Date | undefined) => {
+        setDate(newDate);
+        if (newDate) {
+            setMonth(newDate);
+        }
+    };
+
     return (
         <Popover>
             <PopoverTrigger asChild>
@@ -40,7 +55,12 @@ export function DatePicker({ date, setDate, className, placeholder = "Pick a dat
                 <Calendar
                     mode="single"
                     selected={date}
-                    onSelect={setDate}
+                    onSelect={handleSelect}
+                    month={month}
+                    onMonthChange={setMonth}
+                    captionLayout="dropdown-buttons"
+                    fromYear={1980}
+                    toYear={2050}
                 />
             </PopoverContent>
         </Popover>
