@@ -32,6 +32,7 @@ import { useAuth } from '@/features/auth/AuthContext';
 import { ExpenseCategory, TripExpense } from '../types';
 import { useTripParticipants } from '../hooks/useTripParticipants';
 import { paymentMethodService } from '@/lib/api/paymentMethods';
+import { CATEGORY_CONFIG } from '../constants';
 import Link from 'next/link';
 
 interface AddTripExpenseModalProps {
@@ -92,21 +93,54 @@ export function AddTripExpenseModal({ tripId, tripName, participants: tripPartic
         }
     }, [household?.id, open]);
 
-    const { register, handleSubmit, formState: { errors }, watch, setValue, reset, control } = useForm<ExpenseFormData>({
+    const { register, handleSubmit, formState: { errors, isDirty }, watch, setValue, reset, control } = useForm<ExpenseFormData>({
         resolver: zodResolver(expenseSchema),
         defaultValues: {
             date: new Date(),
-            mode: 'card', // value will be overwritten if user selects a payment method, or we can default to 'card'
+            mode: 'card',
             currency: 'USD',
             conversionRate: 1,
-            category: 'food'
+            category: 'food',
+            paidBy: ''
         }
     });
+
+    // Reset form when modal opens
+    useEffect(() => {
+        if (open) {
+            reset({
+                date: new Date(),
+                mode: 'card',
+                currency: 'USD',
+                conversionRate: 1,
+                category: 'food',
+                paidBy: '',
+                amount: undefined,
+                paymentMethodId: undefined,
+                notes: ''
+            });
+            setIsCustomCurrency(false);
+            setIsCustomPayer(false);
+        }
+    }, [open, reset]);
+
+    // Apply smart defaults from context
+    useEffect(() => {
+        if (open && !isDirty) {
+            const common = ['USD', 'EUR', 'AED', 'LKR', 'GBP'];
+            if (household?.currency) {
+                setValue('currency', household.currency);
+                setIsCustomCurrency(!common.includes(household.currency));
+            }
+            if (user?.uid) {
+                setValue('paidBy', user.uid);
+            }
+        }
+    }, [open, household, user, isDirty, setValue]);
 
     const amount = watch('amount');
     const rate = watch('conversionRate');
     const baseAmount = (amount || 0) * (rate || 0);
-    const selectedMode = watch('mode');
 
     // Effect to update mode if payment method is selected (if we want to map them) or purely rely on method ID
     const handlePaymentMethodChange = (val: string) => {
@@ -212,13 +246,17 @@ export function AddTripExpenseModal({ tripId, tripName, participants: tripPartic
                                     <SelectValue placeholder="Category" />
                                 </SelectTrigger>
                                 <SelectContent>
-                                    <SelectItem value="food">Food</SelectItem>
-                                    <SelectItem value="transport">Transport</SelectItem>
-                                    <SelectItem value="travel">Travel</SelectItem>
-                                    <SelectItem value="accommodation">Accommodation</SelectItem>
-                                    <SelectItem value="shopping">Shopping</SelectItem>
-                                    <SelectItem value="tips">Tips</SelectItem>
-                                    <SelectItem value="other">Other</SelectItem>
+                                    {Object.entries(CATEGORY_CONFIG).map(([key, config]) => {
+                                        const Icon = config.icon;
+                                        return (
+                                            <SelectItem key={key} value={key}>
+                                                <div className="flex items-center gap-2">
+                                                    <Icon className={`h-4 w-4 ${config.color}`} />
+                                                    <span>{config.label}</span>
+                                                </div>
+                                            </SelectItem>
+                                        );
+                                    })}
                                 </SelectContent>
                             </Select>
                         </div>

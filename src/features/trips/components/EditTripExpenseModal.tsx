@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
-import { Timestamp, collection, getDocs, doc, getDoc } from 'firebase/firestore';
+import { Timestamp, collection, getDocs, doc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -33,6 +33,7 @@ import { ExpenseCategory, TripExpense } from '../types';
 import { useTripParticipants } from '../hooks/useTripParticipants';
 import { paymentMethodService } from '@/lib/api/paymentMethods';
 import Link from 'next/link';
+import { CATEGORY_CONFIG } from '../constants';
 
 interface EditTripExpenseModalProps {
     tripId: string;
@@ -252,13 +253,17 @@ export function EditTripExpenseModal({ tripId, tripName, participants: tripParti
                                             <SelectValue placeholder="Category" />
                                         </SelectTrigger>
                                         <SelectContent>
-                                            <SelectItem value="food">Food</SelectItem>
-                                            <SelectItem value="transport">Transport</SelectItem>
-                                            <SelectItem value="travel">Travel</SelectItem>
-                                            <SelectItem value="accommodation">Accommodation</SelectItem>
-                                            <SelectItem value="shopping">Shopping</SelectItem>
-                                            <SelectItem value="tips">Tips</SelectItem>
-                                            <SelectItem value="other">Other</SelectItem>
+                                            {Object.entries(CATEGORY_CONFIG).map(([key, config]) => {
+                                                const Icon = config.icon;
+                                                return (
+                                                    <SelectItem key={key} value={key}>
+                                                        <div className="flex items-center gap-2">
+                                                            <Icon className={`h-4 w-4 ${config.color}`} />
+                                                            <span>{config.label}</span>
+                                                        </div>
+                                                    </SelectItem>
+                                                );
+                                            })}
                                         </SelectContent>
                                     </Select>
                                 )}

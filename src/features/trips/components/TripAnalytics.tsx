@@ -4,6 +4,9 @@ import { UserProfile, TripFund, TripExpense, TripReturn } from "@/types";
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend, BarChart, Bar, XAxis, YAxis, CartesianGrid } from 'recharts';
 import { useTripCalculations } from "../hooks/useTripCalculations";
 
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { useState, useMemo } from 'react';
+
 interface TripAnalyticsProps {
     funds: TripFund[];
     expenses: TripExpense[];
@@ -14,12 +17,31 @@ interface TripAnalyticsProps {
 const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884d8', '#82ca9d', '#ffc658'];
 
 export function TripAnalytics({ funds, expenses, returns, participants }: TripAnalyticsProps) {
-    const { byCategory, byUser } = useTripCalculations(funds, expenses, returns);
+    const { byUser } = useTripCalculations(funds, expenses, returns);
 
-    // 1. Expenses by Category Data
-    const categoryData = Object.entries(byCategory)
-        .filter(([, value]) => value > 0)
-        .map(([name, value]) => ({ name: name.charAt(0).toUpperCase() + name.slice(1), value }));
+    const [selectedPayer, setSelectedPayer] = useState<string>('all');
+
+    // 1. Expenses by Category Data (Filtered)
+    const categoryData = useMemo(() => {
+        // If 'all', use the pre-calculated byCategory from hook (which includes everyone)
+        // OR re-calculate if we want to support switching.
+        // Actually, the hook returns ALL. If we want filtered, we should calculate it here.
+
+        let filteredExpenses = expenses;
+        if (selectedPayer !== 'all') {
+            filteredExpenses = expenses.filter(e => e.paidBy === selectedPayer);
+        }
+
+        const stats: Record<string, number> = {};
+        filteredExpenses.forEach(e => {
+            const cat = e.category;
+            stats[cat] = (stats[cat] || 0) + (e.baseAmount || 0);
+        });
+
+        return Object.entries(stats)
+            .filter(([, value]) => value > 0)
+            .map(([name, value]) => ({ name: name.charAt(0).toUpperCase() + name.slice(1), value }));
+    }, [expenses, selectedPayer]);
 
     // 2. Member Balances Data
     const getName = (uid: string) => participants.find(p => p.uid === uid)?.displayName || uid.substring(0, 5);
@@ -38,8 +60,19 @@ export function TripAnalytics({ funds, expenses, returns, participants }: TripAn
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 {/* Expenses by Category */}
                 <Card>
-                    <CardHeader>
-                        <CardTitle>Expenses by Category</CardTitle>
+                    <CardHeader className="flex flex-row items-center justify-between pb-2">
+                        <CardTitle className="text-base font-medium">Expenses by Category</CardTitle>
+                        <Select value={selectedPayer} onValueChange={setSelectedPayer}>
+                            <SelectTrigger className="w-[140px] h-8 text-xs">
+                                <SelectValue placeholder="All Users" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="all">All Users</SelectItem>
+                                {participants.map(p => (
+                                    <SelectItem key={p.uid} value={p.uid}>{p.displayName || 'Unknown'}</SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
                     </CardHeader>
                     <CardContent className="h-[300px]">
                         <ResponsiveContainer width="100%" height="100%">

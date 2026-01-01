@@ -1,11 +1,12 @@
-import { TripExpense, UserProfile } from '@/types';
+import { TripExpense, UserProfile, ExpenseCategory } from '@/types';
 import { toJsDate } from '@/lib/utils';
 import { format } from 'date-fns';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
-import { Pencil } from 'lucide-react';
+import { Pencil, ArrowUp, ArrowDown, ArrowUpDown } from 'lucide-react';
 import { useState } from 'react';
 import { EditTripExpenseModal } from './EditTripExpenseModal';
+import { CATEGORY_CONFIG } from '../constants';
 
 interface TripExpensesListProps {
     tripId: string;
@@ -16,6 +17,7 @@ interface TripExpensesListProps {
 }
 
 export function TripExpensesList({ tripId, tripName, expenses, participants, onAdd }: TripExpensesListProps) {
+    const [sortConfig, setSortConfig] = useState<{ key: string; direction: 'asc' | 'desc' } | null>({ key: 'date', direction: 'desc' });
     const [editingExpense, setEditingExpense] = useState<TripExpense | null>(null);
 
     const getName = (uid: string) => {
@@ -31,22 +33,70 @@ export function TripExpensesList({ tripId, tripName, expenses, participants, onA
         }
     };
 
+    const sortedExpenses = [...expenses].sort((a, b) => {
+        if (!sortConfig) return 0;
+        const { key, direction } = sortConfig;
+
+        let aValue: string | number = '';
+        let bValue: string | number = '';
+
+        if (key === 'paidBy') {
+            aValue = getName(a.paidBy);
+            bValue = getName(b.paidBy);
+        } else if (key === 'date') {
+            aValue = toJsDate(a.date).getTime();
+            bValue = toJsDate(b.date).getTime();
+        } else if (key === 'category') {
+            aValue = a.category;
+            bValue = b.category;
+        } else if (key === 'baseAmount') {
+            aValue = a.baseAmount;
+            bValue = b.baseAmount;
+        } else {
+            // Fallback for other potential keys if any
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            aValue = (a as any)[key] || '';
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            bValue = (b as any)[key] || '';
+        }
+
+        if (aValue < bValue) return direction === 'asc' ? -1 : 1;
+        if (aValue > bValue) return direction === 'asc' ? 1 : -1;
+        return 0;
+    });
+
+    const requestSort = (key: string) => {
+        let direction: 'asc' | 'desc' = 'asc';
+        if (sortConfig && sortConfig.key === key && sortConfig.direction === 'asc') {
+            direction = 'desc';
+        }
+        setSortConfig({ key, direction });
+    };
+
     return (
         <div className="border rounded-md">
             <Table>
                 <TableHeader>
                     <TableRow>
-                        <TableHead>Date</TableHead>
-                        <TableHead>Category</TableHead>
+                        <TableHead className="cursor-pointer hover:bg-muted/50" onClick={() => requestSort('date')}>
+                            <div className="flex items-center">Date <SortIcon columnKey="date" sortConfig={sortConfig} /></div>
+                        </TableHead>
+                        <TableHead className="cursor-pointer hover:bg-muted/50" onClick={() => requestSort('category')}>
+                            <div className="flex items-center">Category <SortIcon columnKey="category" sortConfig={sortConfig} /></div>
+                        </TableHead>
                         <TableHead>Description</TableHead>
-                        <TableHead>Paid By</TableHead>
+                        <TableHead className="cursor-pointer hover:bg-muted/50" onClick={() => requestSort('paidBy')}>
+                            <div className="flex items-center">Paid By <SortIcon columnKey="paidBy" sortConfig={sortConfig} /></div>
+                        </TableHead>
                         <TableHead>Amount</TableHead>
-                        <TableHead>Base Amount</TableHead>
+                        <TableHead className="cursor-pointer hover:bg-muted/50" onClick={() => requestSort('baseAmount')}>
+                            <div className="flex items-center">Base Amount <SortIcon columnKey="baseAmount" sortConfig={sortConfig} /></div>
+                        </TableHead>
                         <TableHead className="w-[50px]"></TableHead>
                     </TableRow>
                 </TableHeader>
                 <TableBody>
-                    {expenses.length === 0 ? (
+                    {sortedExpenses.length === 0 ? (
                         <TableRow>
                             <TableCell colSpan={7} className="text-center h-32">
                                 <div className="flex flex-col items-center justify-center space-y-2">
@@ -58,10 +108,24 @@ export function TripExpensesList({ tripId, tripName, expenses, participants, onA
                             </TableCell>
                         </TableRow>
                     ) : (
-                        expenses.map((expense) => (
+                        sortedExpenses.map((expense) => (
                             <TableRow key={expense.id}>
                                 <TableCell>{formatDate(expense.date)}</TableCell>
-                                <TableCell className="capitalize">{expense.category}</TableCell>
+                                <TableCell className="capitalize">
+                                    {(() => {
+                                        const config = CATEGORY_CONFIG[expense.category as ExpenseCategory];
+                                        if (config) {
+                                            const Icon = config.icon;
+                                            return (
+                                                <div className="flex items-center gap-2">
+                                                    <Icon className={`h-4 w-4 ${config.color}`} />
+                                                    <span>{config.label}</span>
+                                                </div>
+                                            );
+                                        }
+                                        return expense.category;
+                                    })()}
+                                </TableCell>
                                 <TableCell className="max-w-[200px] truncate">{expense.notes}</TableCell>
                                 <TableCell>{getName(expense.paidBy)}</TableCell>
                                 <TableCell>{expense.amount.toFixed(2)} {expense.currency}</TableCell>
@@ -89,5 +153,12 @@ export function TripExpensesList({ tripId, tripName, expenses, participants, onA
             )}
         </div>
     );
+}
+
+function SortIcon({ columnKey, sortConfig }: { columnKey: string; sortConfig: { key: string; direction: 'asc' | 'desc' } | null }) {
+    if (sortConfig?.key !== columnKey) return <ArrowUpDown className="ml-2 h-4 w-4 text-muted-foreground/30" />;
+    return sortConfig.direction === 'asc'
+        ? <ArrowUp className="ml-2 h-4 w-4" />
+        : <ArrowDown className="ml-2 h-4 w-4" />;
 }
 
