@@ -13,6 +13,7 @@ import { Plus, ArrowLeft } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 
+import { useAuth } from '@/features/auth/AuthContext';
 import { AddTripFundModal } from './AddTripFundModal';
 import { AddTripExpenseModal } from './AddTripExpenseModal';
 import { AddTripReturnModal } from './AddTripReturnModal';
@@ -26,15 +27,25 @@ interface TripDetailProps {
 }
 
 export function TripDetail({ id }: TripDetailProps) {
+    const { household } = useAuth();
+    const householdCurrency = household?.currency || 'Base';
+
     const router = useRouter();
     const { trip, loading: tripLoading } = useTrip(id);
     const { funds, fundsLoading } = useTripFunds(id);
     const { expenses, expensesLoading } = useTripExpenses(id);
     const { returns, returnsLoading } = useTripReturns(id);
 
-    const { participants, loading: participantsLoading } = useTripParticipants(trip?.participantIds || []);
+    const { participants, loading: participantsLoading } = useTripParticipants(
+        Array.from(new Set([
+            ...(trip?.participantIds || []),
+            ...(funds?.map(f => f.contributorId) || []),
+            ...(expenses?.map(e => e.paidBy) || []),
+            ...(returns?.map(r => r.receivedBy || '') || []).filter(id => id)
+        ]))
+    );
 
-    const { totals, byUser } = useTripCalculations(funds, expenses, returns);
+    const { totals, byUser, bySource } = useTripCalculations(funds, expenses, returns);
 
     const [isFundModalOpen, setIsFundModalOpen] = useState(false);
     const [isExpenseModalOpen, setIsExpenseModalOpen] = useState(false);
@@ -81,19 +92,19 @@ export function TripDetail({ id }: TripDetailProps) {
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                 <Card>
                     <CardHeader className="pb-2"><CardTitle className="text-sm font-medium">Total Funds</CardTitle></CardHeader>
-                    <CardContent><div className="text-2xl font-bold">{totals.totalFunds.toFixed(2)}</div></CardContent>
+                    <CardContent><div className="text-2xl font-bold">{totals.totalFunds.toFixed(2)} <span className="text-sm font-normal text-muted-foreground">{householdCurrency}</span></div></CardContent>
                 </Card>
                 <Card>
                     <CardHeader className="pb-2"><CardTitle className="text-sm font-medium">Total Expenses</CardTitle></CardHeader>
-                    <CardContent><div className="text-2xl font-bold">{totals.totalExpenses.toFixed(2)}</div></CardContent>
+                    <CardContent><div className="text-2xl font-bold">{totals.totalExpenses.toFixed(2)} <span className="text-sm font-normal text-muted-foreground">{householdCurrency}</span></div></CardContent>
                 </Card>
                 <Card>
                     <CardHeader className="pb-2"><CardTitle className="text-sm font-medium">Returns</CardTitle></CardHeader>
-                    <CardContent><div className="text-2xl font-bold">{totals.totalReturns.toFixed(2)}</div></CardContent>
+                    <CardContent><div className="text-2xl font-bold">{totals.totalReturns.toFixed(2)} <span className="text-sm font-normal text-muted-foreground">{householdCurrency}</span></div></CardContent>
                 </Card>
                 <Card>
                     <CardHeader className="pb-2"><CardTitle className="text-sm font-medium">Remaining Funds</CardTitle></CardHeader>
-                    <CardContent><div className={`text-2xl font-bold ${totals.remainingFunds < 0 ? 'text-red-500' : 'text-green-500'}`}>{totals.remainingFunds.toFixed(2)}</div></CardContent>
+                    <CardContent><div className={`text-2xl font-bold ${totals.remainingFunds < 0 ? 'text-red-500' : 'text-green-500'}`}>{totals.remainingFunds.toFixed(2)} <span className="text-sm font-normal text-muted-foreground">{householdCurrency}</span></div></CardContent>
                 </Card>
             </div>
 
@@ -128,6 +139,23 @@ export function TripDetail({ id }: TripDetailProps) {
                     </Card>
                 </TabsContent>
                 <TabsContent value="funds" className="space-y-4">
+                    <div className="grid grid-cols-2 gap-4">
+                        <Card>
+                            <CardHeader className="pb-2"><CardTitle className="text-sm font-medium">Assets (Savings)</CardTitle></CardHeader>
+                            <CardContent>
+                                <div className="text-2xl font-bold">{bySource.asset.totalBase.toFixed(2)} <span className="text-sm font-normal text-muted-foreground">{householdCurrency}</span></div>
+                                <p className="text-xs text-muted-foreground">{bySource.asset.count} contributions</p>
+                            </CardContent>
+                        </Card>
+                        <Card>
+                            <CardHeader className="pb-2"><CardTitle className="text-sm font-medium">Exchange (Bought)</CardTitle></CardHeader>
+                            <CardContent>
+                                <div className="text-2xl font-bold">{bySource.exchange.totalBase.toFixed(2)} <span className="text-sm font-normal text-muted-foreground">{householdCurrency}</span></div>
+                                <p className="text-xs text-muted-foreground">{bySource.exchange.count} contributions</p>
+                            </CardContent>
+                        </Card>
+                    </div>
+
                     <div className="flex justify-between items-center">
                         <h3 className="text-lg font-medium">Travel Funds</h3>
                         <Button size="sm" onClick={() => setIsFundModalOpen(true)}><Plus className="h-4 w-4 mr-2" />Add Fund</Button>
@@ -139,7 +167,7 @@ export function TripDetail({ id }: TripDetailProps) {
                         <h3 className="text-lg font-medium">Expenses</h3>
                         <Button size="sm" onClick={() => setIsExpenseModalOpen(true)}><Plus className="h-4 w-4 mr-2" />Add Expense</Button>
                     </div>
-                    <TripExpensesList expenses={expenses} participants={participants} onAdd={() => setIsExpenseModalOpen(true)} />
+                    <TripExpensesList tripId={id} tripName={trip.tripName} expenses={expenses} participants={participants} onAdd={() => setIsExpenseModalOpen(true)} />
                 </TabsContent>
                 <TabsContent value="returns" className="space-y-4">
                     <div className="flex justify-between items-center">

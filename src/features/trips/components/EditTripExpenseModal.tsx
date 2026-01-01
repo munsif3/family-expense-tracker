@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
-import { Timestamp, collection, getDocs } from 'firebase/firestore';
+import { Timestamp, collection, getDocs, doc, getDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -34,15 +34,14 @@ import { useTripParticipants } from '../hooks/useTripParticipants';
 import { paymentMethodService } from '@/lib/api/paymentMethods';
 import Link from 'next/link';
 
-interface AddTripExpenseModalProps {
+interface EditTripExpenseModalProps {
     tripId: string;
     tripName: string;
     participants: UserProfile[];
     open: boolean;
     onOpenChange: (open: boolean) => void;
+    expense: TripExpense;
 }
-
-type ExpenseFormData = z.infer<typeof expenseSchema>;
 
 const expenseSchema = z.object({
     date: z.date(),
@@ -56,11 +55,11 @@ const expenseSchema = z.object({
     notes: z.string().optional(),
 });
 
-// ... inside component
+type ExpenseFormData = z.infer<typeof expenseSchema>;
 
-export function AddTripExpenseModal({ tripId, tripName, participants: tripParticipants, open, onOpenChange }: AddTripExpenseModalProps) {
+export function EditTripExpenseModal({ tripId, tripName, participants: tripParticipants, open, onOpenChange, expense }: EditTripExpenseModalProps) {
     const { user, household } = useAuth();
-    const { addExpense } = useTripExpenses(tripId);
+    const { updateExpense } = useTripExpenses(tripId);
 
     // Fetch all household members
     const { participants: householdMembers } = useTripParticipants(household?.memberIds || []);
@@ -83,7 +82,9 @@ export function AddTripExpenseModal({ tripId, tripName, participants: tripPartic
                 try {
                     const methods = await paymentMethodService.getPaymentMethods(household.id);
                     setPaymentMethods(methods);
-                } catch (e) { console.error(e); }
+                } catch (e) {
+                    console.error(e);
+                }
                 setPmLoading(false);
             }
         };
@@ -95,45 +96,86 @@ export function AddTripExpenseModal({ tripId, tripName, participants: tripPartic
     const { register, handleSubmit, formState: { errors }, watch, setValue, reset, control } = useForm<ExpenseFormData>({
         resolver: zodResolver(expenseSchema),
         defaultValues: {
-            date: new Date(),
-            mode: 'card', // value will be overwritten if user selects a payment method, or we can default to 'card'
-            currency: 'USD',
-            conversionRate: 1,
-            category: 'food'
+            date: expense.date.toDate(),
+            amount: expense.amount,
+            currency: expense.currency,
+            conversionRate: expense.conversionRate,
+            mode: expense.mode,
+            paymentMethodId: expense.paymentMethodId,
+            paidBy: expense.paidBy,
+            category: expense.category,
+            notes: expense.notes || ''
         }
     });
+
+    // Reset form when expense changes
+    useEffect(() => {
+        if (expense && open) {
+            // Handle custom payer if not in list (simplified logic) or keep simple
+            // Handle custom currency
+            const isStandardCurrency = ['USD', 'EUR', 'AED', 'LKR', 'GBP'].includes(expense.currency);
+            if (!isStandardCurrency) {
+                setIsCustomCurrency(true);
+            } else {
+                setIsCustomCurrency(false);
+            }
+
+            // Handle Custom Payer
+            const payerExists = availablePayers.some(p => p.uid === expense.paidBy);
+            if (!payerExists && householdMembers.length > 0) {
+                // Might be custom name? Or user not loaded yet.
+                // For now, if paidBy is a valid UID, we assume it's fine. If it's a name, we set custom.
+                // But paidBy is typed as string (ref). If it's literally a name, we might need to check logic.
+                // Assuming paidBy is UID. If we enabled "Other" as name in Add, we need to handle it.
+                // In AddModal, 'other' sets paidBy to custom input name.
+                setIsCustomPayer(false); // Default to false unless we detect it's not a UUID?
+                // Or we check if it matches any participant ID.
+                if (expense.paidBy && !availablePayers.some(p => p.uid === expense.paidBy)) {
+                    // It might be a custom name
+                    setIsCustomPayer(true);
+                }
+            }
+
+            reset({
+                date: expense.date.toDate(),
+                amount: expense.amount,
+                currency: expense.currency,
+                conversionRate: expense.conversionRate,
+                mode: expense.mode,
+                paymentMethodId: expense.paymentMethodId,
+                paidBy: expense.paidBy,
+                category: expense.category,
+                notes: expense.notes || ''
+            });
+        }
+    }, [expense, open, reset, availablePayers, householdMembers]);
+
 
     const amount = watch('amount');
     const rate = watch('conversionRate');
     const baseAmount = (amount || 0) * (rate || 0);
-    const selectedMode = watch('mode');
 
-    // Effect to update mode if payment method is selected (if we want to map them) or purely rely on method ID
     const handlePaymentMethodChange = (val: string) => {
         setValue('paymentMethodId', val);
         const method = paymentMethods.find(m => m.id === val);
         if (method) {
-            setValue('mode', method.type); // Map known types: credit_card -> card, etc.
+            setValue('mode', method.type);
         }
     };
-
-    // Reverse map: allow mode selection if "Other" or generic? 
-    // The user wants configured methods.
 
     const onSubmit = async (data: ExpenseFormData) => {
         if (!user) return;
         setIsSubmitting(true);
         try {
-            // 1. Add Expense
-            await addExpense({
-                tripId,
+            // 1. Update Expense
+            await updateExpense(expense.id, {
                 date: Timestamp.fromDate(data.date),
                 amount: data.amount,
                 currency: data.currency,
                 conversionRate: data.conversionRate,
                 baseAmount: baseAmount,
-                mode: data.mode, // Still store generic mode
-                paymentMethodId: data.paymentMethodId, // Store specific method ID
+                mode: data.mode,
+                paymentMethodId: data.paymentMethodId,
                 paidBy: data.paidBy,
                 category: data.category as ExpenseCategory,
                 notes: data.notes
@@ -152,14 +194,9 @@ export function AddTripExpenseModal({ tripId, tripName, participants: tripPartic
                 household?.id
             );
 
-            // Reset custom states
-            setIsCustomPayer(false);
-            setIsCustomCurrency(false);
-
-            reset();
             onOpenChange(false);
         } catch (error) {
-            console.error("Failed to add expense", error);
+            console.error("Failed to update expense", error);
         } finally {
             setIsSubmitting(false);
         }
@@ -189,11 +226,10 @@ export function AddTripExpenseModal({ tripId, tripName, participants: tripPartic
         <Dialog open={open} onOpenChange={onOpenChange}>
             <DialogContent className="sm:max-w-[425px] overflow-y-auto max-h-[90vh]">
                 <DialogHeader>
-                    <DialogTitle>Add Expense</DialogTitle>
-                    <DialogDescription>Track a trip expense.</DialogDescription>
+                    <DialogTitle>Edit Expense</DialogTitle>
+                    <DialogDescription>Modify trip expense details.</DialogDescription>
                 </DialogHeader>
                 <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-                    {/* ... Date and Category ... */}
                     <div className="grid grid-cols-2 gap-4">
                         <div className="space-y-2 flex flex-col">
                             <Label htmlFor="date">Date</Label>
@@ -207,20 +243,26 @@ export function AddTripExpenseModal({ tripId, tripName, participants: tripPartic
                         </div>
                         <div className="space-y-2">
                             <Label htmlFor="category">Category</Label>
-                            <Select onValueChange={(val) => setValue('category', val as ExpenseCategory)} defaultValue="food">
-                                <SelectTrigger>
-                                    <SelectValue placeholder="Category" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    <SelectItem value="food">Food</SelectItem>
-                                    <SelectItem value="transport">Transport</SelectItem>
-                                    <SelectItem value="travel">Travel</SelectItem>
-                                    <SelectItem value="accommodation">Accommodation</SelectItem>
-                                    <SelectItem value="shopping">Shopping</SelectItem>
-                                    <SelectItem value="tips">Tips</SelectItem>
-                                    <SelectItem value="other">Other</SelectItem>
-                                </SelectContent>
-                            </Select>
+                            <Controller
+                                control={control}
+                                name="category"
+                                render={({ field }) => (
+                                    <Select onValueChange={(val) => field.onChange(val as ExpenseCategory)} value={field.value}>
+                                        <SelectTrigger>
+                                            <SelectValue placeholder="Category" />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            <SelectItem value="food">Food</SelectItem>
+                                            <SelectItem value="transport">Transport</SelectItem>
+                                            <SelectItem value="travel">Travel</SelectItem>
+                                            <SelectItem value="accommodation">Accommodation</SelectItem>
+                                            <SelectItem value="shopping">Shopping</SelectItem>
+                                            <SelectItem value="tips">Tips</SelectItem>
+                                            <SelectItem value="other">Other</SelectItem>
+                                        </SelectContent>
+                                    </Select>
+                                )}
+                            />
                         </div>
                     </div>
 
@@ -243,19 +285,25 @@ export function AddTripExpenseModal({ tripId, tripName, participants: tripPartic
                         <div className="space-y-2">
                             <Label htmlFor="currency">Currency</Label>
                             {!isCustomCurrency ? (
-                                <Select onValueChange={handleCurrencyChange} defaultValue="USD">
-                                    <SelectTrigger>
-                                        <SelectValue placeholder="Currency" />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        <SelectItem value="USD">USD</SelectItem>
-                                        <SelectItem value="EUR">EUR</SelectItem>
-                                        <SelectItem value="AED">AED</SelectItem>
-                                        <SelectItem value="LKR">LKR</SelectItem>
-                                        <SelectItem value="GBP">GBP</SelectItem>
-                                        <SelectItem value="custom_currency_entry">Other...</SelectItem>
-                                    </SelectContent>
-                                </Select>
+                                <Controller
+                                    control={control}
+                                    name="currency"
+                                    render={({ field }) => (
+                                        <Select onValueChange={handleCurrencyChange} value={field.value}>
+                                            <SelectTrigger>
+                                                <SelectValue placeholder="Currency" />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                <SelectItem value="USD">USD</SelectItem>
+                                                <SelectItem value="EUR">EUR</SelectItem>
+                                                <SelectItem value="AED">AED</SelectItem>
+                                                <SelectItem value="LKR">LKR</SelectItem>
+                                                <SelectItem value="GBP">GBP</SelectItem>
+                                                <SelectItem value="custom_currency_entry">Other...</SelectItem>
+                                            </SelectContent>
+                                        </Select>
+                                    )}
+                                />
                             ) : (
                                 <div className="flex gap-2">
                                     <Input placeholder="Code" {...register('currency')} className="uppercase" maxLength={3} />
@@ -278,17 +326,23 @@ export function AddTripExpenseModal({ tripId, tripName, participants: tripPartic
                         <div className="space-y-2">
                             <Label htmlFor="paidBy">Paid By</Label>
                             {!isCustomPayer ? (
-                                <Select onValueChange={handlePayerChange}>
-                                    <SelectTrigger>
-                                        <SelectValue placeholder="Select user" />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        {availablePayers.map(user => (
-                                            <SelectItem key={user.uid} value={user.uid}>{user.displayName || user.email}</SelectItem>
-                                        ))}
-                                        <SelectItem value="other">Other (Custom)</SelectItem>
-                                    </SelectContent>
-                                </Select>
+                                <Controller
+                                    control={control}
+                                    name="paidBy"
+                                    render={({ field }) => (
+                                        <Select onValueChange={handlePayerChange} value={field.value}>
+                                            <SelectTrigger>
+                                                <SelectValue placeholder="Select user" />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                {availablePayers.map(user => (
+                                                    <SelectItem key={user.uid} value={user.uid}>{user.displayName || user.email}</SelectItem>
+                                                ))}
+                                                <SelectItem value="other">Other (Custom)</SelectItem>
+                                            </SelectContent>
+                                        </Select>
+                                    )}
+                                />
                             ) : (
                                 <div className="flex gap-2">
                                     <Input placeholder="Enter name" {...register('paidBy')} />
@@ -308,21 +362,26 @@ export function AddTripExpenseModal({ tripId, tripName, participants: tripPartic
                                 </Link>
                             )}
                         </div>
-                        <Select onValueChange={handlePaymentMethodChange}>
-                            <SelectTrigger>
-                                <SelectValue placeholder={pmLoading ? "Loading..." : "Select Method"} />
-                            </SelectTrigger>
-                            <SelectContent>
-                                {paymentMethods.map(method => (
-                                    <SelectItem key={method.id} value={method.id}>
-                                        {method.name} ({method.type.replace('_', ' ')})
-                                    </SelectItem>
-                                ))}
-                                <SelectItem value="cash_generic">Cash (Unspecified)</SelectItem>
-                                <SelectItem value="other_generic">Other</SelectItem>
-                            </SelectContent>
-                        </Select>
-                        {/* Hidden generic mode field or we can show it as confirm? For now, we auto-set it */}
+                        <Controller
+                            control={control}
+                            name="paymentMethodId"
+                            render={({ field }) => (
+                                <Select onValueChange={handlePaymentMethodChange} value={field.value}>
+                                    <SelectTrigger>
+                                        <SelectValue placeholder={pmLoading ? "Loading..." : "Select Method"} />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        {paymentMethods.map(method => (
+                                            <SelectItem key={method.id} value={method.id}>
+                                                {method.name} ({method.type.replace('_', ' ')})
+                                            </SelectItem>
+                                        ))}
+                                        <SelectItem value="cash_generic">Cash (Unspecified)</SelectItem>
+                                        <SelectItem value="other_generic">Other</SelectItem>
+                                    </SelectContent>
+                                </Select>
+                            )}
+                        />
                         <input type="hidden" {...register('mode')} />
                     </div>
 
@@ -332,7 +391,7 @@ export function AddTripExpenseModal({ tripId, tripName, participants: tripPartic
 
                     <DialogFooter>
                         <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
-                        <Button type="submit" disabled={isSubmitting}>{isSubmitting ? "Adding..." : "Add Expense"}</Button>
+                        <Button type="submit" disabled={isSubmitting}>{isSubmitting ? "Save Changes" : "Save Changes"}</Button>
                     </DialogFooter>
                 </form>
             </DialogContent>

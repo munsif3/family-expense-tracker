@@ -3,14 +3,21 @@ import { toJsDate } from '@/lib/utils';
 import { format } from 'date-fns';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
+import { Pencil } from 'lucide-react';
+import { useState } from 'react';
+import { EditTripExpenseModal } from './EditTripExpenseModal';
 
 interface TripExpensesListProps {
+    tripId: string;
+    tripName: string;
     expenses: TripExpense[];
     participants: UserProfile[];
     onAdd: () => void;
 }
 
-export function TripExpensesList({ expenses, participants, onAdd }: TripExpensesListProps) {
+export function TripExpensesList({ tripId, tripName, expenses, participants, onAdd }: TripExpensesListProps) {
+    const [editingExpense, setEditingExpense] = useState<TripExpense | null>(null);
+
     const getName = (uid: string) => {
         return participants.find(p => p.uid === uid)?.displayName || uid;
     };
@@ -35,12 +42,13 @@ export function TripExpensesList({ expenses, participants, onAdd }: TripExpenses
                         <TableHead>Paid By</TableHead>
                         <TableHead>Amount</TableHead>
                         <TableHead>Base Amount</TableHead>
+                        <TableHead className="w-[50px]"></TableHead>
                     </TableRow>
                 </TableHeader>
                 <TableBody>
                     {expenses.length === 0 ? (
                         <TableRow>
-                            <TableCell colSpan={6} className="text-center h-32">
+                            <TableCell colSpan={7} className="text-center h-32">
                                 <div className="flex flex-col items-center justify-center space-y-2">
                                     <p className="text-muted-foreground">No expenses recorded yet.</p>
                                     <Button variant="outline" size="sm" onClick={onAdd}>
@@ -58,11 +66,28 @@ export function TripExpensesList({ expenses, participants, onAdd }: TripExpenses
                                 <TableCell>{getName(expense.paidBy)}</TableCell>
                                 <TableCell>{expense.amount.toFixed(2)} {expense.currency}</TableCell>
                                 <TableCell className="font-medium">{expense.baseAmount.toFixed(2)}</TableCell>
+                                <TableCell>
+                                    <Button variant="ghost" size="icon" onClick={() => setEditingExpense(expense)}>
+                                        <Pencil className="h-4 w-4" />
+                                    </Button>
+                                </TableCell>
                             </TableRow>
                         ))
                     )}
                 </TableBody>
             </Table>
+
+            {editingExpense && (
+                <EditTripExpenseModal
+                    tripId={tripId}
+                    tripName={tripName}
+                    participants={participants}
+                    open={!!editingExpense}
+                    onOpenChange={(open) => !open && setEditingExpense(null)}
+                    expense={editingExpense}
+                />
+            )}
         </div>
     );
 }
+

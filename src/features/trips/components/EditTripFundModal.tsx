@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
@@ -26,7 +26,7 @@ import {
 import { useTripFunds } from '../hooks/useTripData';
 import { useAuth } from '@/features/auth/AuthContext';
 import { useTripParticipants } from '../hooks/useTripParticipants';
-import { UserProfile } from '@/types';
+import { UserProfile, TripFund } from '@/types';
 
 const fundSchema = z.object({
     date: z.string(),
@@ -40,21 +40,18 @@ const fundSchema = z.object({
 
 type FundFormData = z.infer<typeof fundSchema>;
 
-interface AddTripFundModalProps {
+interface EditTripFundModalProps {
     tripId: string;
+    fund: TripFund | null;
     participants: UserProfile[];
     open: boolean;
     onOpenChange: (open: boolean) => void;
 }
 
-export function AddTripFundModal({ tripId, participants: tripParticipants, open, onOpenChange }: AddTripFundModalProps) {
-    const { addFund } = useTripFunds(tripId);
+export function EditTripFundModal({ tripId, fund, participants: tripParticipants, open, onOpenChange }: EditTripFundModalProps) {
+    const { updateFund } = useTripFunds(tripId);
     const { household } = useAuth();
-    // Fetch all household members
     const { participants: householdMembers } = useTripParticipants(household?.memberIds || []);
-
-    // Combine lists effectively - prefer household members as they might have more data, but fall back to input participants
-    // Actually, householdMembers should suffice if loaded. 
     const availableContributors = householdMembers.length > 0 ? householdMembers : tripParticipants;
 
     const [isSubmitting, setIsSubmitting] = useState(false);
@@ -75,15 +72,60 @@ export function AddTripFundModal({ tripId, participants: tripParticipants, open,
         }
     });
 
+    useEffect(() => {
+        if (open && fund) {
+            let dateStr = new Date().toISOString().split('T')[0];
+            try {
+                if (fund.date && fund.date.toDate) {
+                    dateStr = fund.date.toDate().toISOString().split('T')[0];
+                }
+            } catch (e) { console.error("Date parse error", e); }
+
+            setValue('date', dateStr);
+            setValue('contributorId', fund.contributorId);
+            setValue('mode', fund.mode);
+            setValue('amount', fund.amount);
+            setValue('currency', fund.currency);
+            setValue('currency', fund.currency);
+            setValue('conversionRate', fund.conversionRate);
+            setValue('source', fund.source || 'asset');
+
+            // Check for custom values
+            if (!['card', 'cash', 'transfer', 'usd_cash', 'eur_cash', 'aed_cash'].includes(fund.mode)) {
+                // Keep legacy ones as known for now so they don't jump to "other" input immediately unless we want them to
+                setIsCustomMode(true);
+            } else {
+                setIsCustomMode(false);
+            }
+
+            // Check custom currency - simple check
+            if (!['USD', 'EUR', 'AED', 'LKR', 'GBP'].includes(fund.currency)) {
+                setIsCustomCurrency(true);
+            } else {
+                setIsCustomCurrency(false);
+            }
+
+            // Check custom contributor - if not in available list
+            const inList = availableContributors.find(p => p.uid === fund.contributorId);
+            if (!inList) {
+                setIsCustomContributor(true);
+            } else {
+                setIsCustomContributor(false);
+            }
+        }
+    }, [open, fund, setValue, availableContributors]);
+
+
     const amount = watch('amount');
     const rate = watch('conversionRate');
     const baseAmount = (amount || 0) * (rate || 0);
 
     const onSubmit = async (data: FundFormData) => {
+        if (!fund) return;
+
         setIsSubmitting(true);
         try {
-            await addFund({
-                tripId,
+            await updateFund(fund.id, {
                 date: Timestamp.fromDate(new Date(data.date)),
                 contributorId: data.contributorId,
                 mode: data.mode,
@@ -94,16 +136,10 @@ export function AddTripFundModal({ tripId, participants: tripParticipants, open,
                 source: data.source,
             });
 
-            // Allow immediate adding of another? No, close for now.
-            // Reset custom states
-            setIsCustomContributor(false);
-            setIsCustomMode(false);
-            setIsCustomCurrency(false);
-
             reset();
             onOpenChange(false);
         } catch (error) {
-            console.error("Failed to add fund", error);
+            console.error("Failed to update fund", error);
         } finally {
             setIsSubmitting(false);
         }
@@ -112,7 +148,7 @@ export function AddTripFundModal({ tripId, participants: tripParticipants, open,
     const handleContributorChange = (val: string) => {
         if (val === 'other') {
             setIsCustomContributor(true);
-            setValue('contributorId', ''); // Clear so user must type
+            setValue('contributorId', '');
         } else {
             setIsCustomContributor(false);
             setValue('contributorId', val);
@@ -143,8 +179,8 @@ export function AddTripFundModal({ tripId, participants: tripParticipants, open,
         <Dialog open={open} onOpenChange={onOpenChange}>
             <DialogContent className="sm:max-w-[425px]">
                 <DialogHeader>
-                    <DialogTitle>Add Travel Fund</DialogTitle>
-                    <DialogDescription>Record money added to the trip pot.</DialogDescription>
+                    <DialogTitle>Edit Travel Fund</DialogTitle>
+                    <DialogDescription>Update fund details.</DialogDescription>
                 </DialogHeader>
                 <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
                     <div className="grid grid-cols-2 gap-4">
@@ -155,7 +191,7 @@ export function AddTripFundModal({ tripId, participants: tripParticipants, open,
                         <div className="space-y-2">
                             <Label htmlFor="contributor">Contributor</Label>
                             {!isCustomContributor ? (
-                                <Select onValueChange={handleContributorChange}>
+                                <Select onValueChange={handleContributorChange} value={watch('contributorId')}>
                                     <SelectTrigger>
                                         <SelectValue placeholder="Select user" />
                                     </SelectTrigger>
@@ -180,7 +216,7 @@ export function AddTripFundModal({ tripId, participants: tripParticipants, open,
                         <div className="space-y-2">
                             <Label htmlFor="mode">Mode</Label>
                             {!isCustomMode ? (
-                                <Select onValueChange={handleModeChange} defaultValue="card">
+                                <Select onValueChange={handleModeChange} value={watch('mode')}>
                                     <SelectTrigger>
                                         <SelectValue placeholder="Mode" />
                                     </SelectTrigger>
@@ -201,7 +237,7 @@ export function AddTripFundModal({ tripId, participants: tripParticipants, open,
                         <div className="space-y-2">
                             <Label htmlFor="currency">Currency</Label>
                             {!isCustomCurrency ? (
-                                <Select onValueChange={handleCurrencyChange} defaultValue="USD">
+                                <Select onValueChange={handleCurrencyChange} value={watch('currency')}>
                                     <SelectTrigger>
                                         <SelectValue placeholder="Currency" />
                                     </SelectTrigger>
@@ -223,27 +259,25 @@ export function AddTripFundModal({ tripId, participants: tripParticipants, open,
                         </div>
                     </div>
 
-                    <div className="grid grid-cols-2 gap-4">
-                        <div className="space-y-2">
-                            <Label>Fund Source</Label>
-                            <div className="flex bg-muted rounded-md p-1">
-                                <Button
-                                    type="button"
-                                    variant={watch('source') === 'asset' ? 'secondary' : 'ghost'}
-                                    className="flex-1 h-8 text-xs"
-                                    onClick={() => setValue('source', 'asset')}
-                                >
-                                    From Savings/Asset
-                                </Button>
-                                <Button
-                                    type="button"
-                                    variant={watch('source') === 'exchange' ? 'secondary' : 'ghost'}
-                                    className="flex-1 h-8 text-xs"
-                                    onClick={() => setValue('source', 'exchange')}
-                                >
-                                    Bought (Exchange)
-                                </Button>
-                            </div>
+                    <div className="space-y-2">
+                        <Label>Fund Source</Label>
+                        <div className="flex bg-muted rounded-md p-1 w-full">
+                            <Button
+                                type="button"
+                                variant={watch('source') === 'asset' ? 'secondary' : 'ghost'}
+                                className="flex-1 h-8 text-xs"
+                                onClick={() => setValue('source', 'asset')}
+                            >
+                                From Savings
+                            </Button>
+                            <Button
+                                type="button"
+                                variant={watch('source') === 'exchange' ? 'secondary' : 'ghost'}
+                                className="flex-1 h-8 text-xs"
+                                onClick={() => setValue('source', 'exchange')}
+                            >
+                                Exchange
+                            </Button>
                         </div>
                     </div>
 
@@ -263,12 +297,12 @@ export function AddTripFundModal({ tripId, participants: tripParticipants, open,
                                 <>
                                     <Label htmlFor="totalCost">Total Cost ({household?.currency || 'Base'})</Label>
                                     <Input
-                                        key="input-total-cost"
+                                        key="input-edit-total-cost"
                                         id="totalCost"
                                         type="number"
                                         step="0.01"
                                         defaultValue={baseAmount ? Number(baseAmount.toFixed(2)) : ''}
-                                        placeholder="Total LKR spent"
+                                        placeholder="Total LKR Cost"
                                         onChange={(e) => {
                                             const cost = parseFloat(e.target.value);
                                             const amt = watch('amount');
@@ -285,7 +319,7 @@ export function AddTripFundModal({ tripId, participants: tripParticipants, open,
                                 <>
                                     <Label htmlFor="rate">Valuation Rate (to Base)</Label>
                                     <Input
-                                        key="input-valuation-rate"
+                                        key="input-edit-valuation-rate"
                                         id="rate"
                                         type="number"
                                         step="0.0001"
@@ -302,7 +336,7 @@ export function AddTripFundModal({ tripId, participants: tripParticipants, open,
 
                     <DialogFooter>
                         <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
-                        <Button type="submit" disabled={isSubmitting}>{isSubmitting ? "Adding..." : "Add Fund"}</Button>
+                        <Button type="submit" disabled={isSubmitting}>{isSubmitting ? "Update Fund" : "Update Fund"}</Button>
                     </DialogFooter>
                 </form>
             </DialogContent>

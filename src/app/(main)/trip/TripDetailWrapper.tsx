@@ -1,11 +1,11 @@
 'use client';
 
-import { useParams } from 'next/navigation';
+import { useSearchParams } from 'next/navigation';
 import { TripDetail } from '@/features/trips/components/TripDetail';
 
 export function TripDetailWrapper() {
-    const params = useParams();
-    const id = params?.id as string;
+    const searchParams = useSearchParams();
+    const id = searchParams.get('id');
 
     if (!id) return null;
 

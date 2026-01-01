@@ -47,7 +47,8 @@ export function useTripParticipants(participantIds: string[]) {
         }
 
         fetchParticipants();
-    }, [participantIds]);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [JSON.stringify(participantIds)]);
 
     return { participants, loading };
 }

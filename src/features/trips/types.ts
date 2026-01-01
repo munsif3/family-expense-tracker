@@ -36,6 +36,7 @@ export interface TripFund {
   currency: string;
   conversionRate: number; // manual entry. 1 if currency == base
   baseAmount: number; // derived: amount * conversionRate
+  source?: 'exchange' | 'asset'; // 'exchange' = bought with base currency, 'asset' = from existing savings
 }
 
 export type ExpenseCategory =
@@ -56,6 +57,7 @@ export interface TripExpense {
   conversionRate: number;
   baseAmount: number;
   mode: PaymentMode;
+  paymentMethodId?: string; // Link to configured payment method
   paidBy: string; // user ref
   category: ExpenseCategory;
   notes?: string;

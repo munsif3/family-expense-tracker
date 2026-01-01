@@ -16,7 +16,7 @@ export function TripsList() {
     const router = useRouter();
 
     const handleTripClick = (id: string) => {
-        router.push(`/trips/${id}`);
+        router.push(`/trip?id=${id}`);
     };
 
     if (loading) return <LoadingSpinner size="lg" className="py-12" text="Loading trips..." />;

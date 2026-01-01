@@ -18,6 +18,21 @@ export function useTripCalculations(
         return { totalFunds, totalExpenses, totalReturns, netCost, remainingFunds };
     }, [funds, expenses, returns]);
 
+    const bySource = useMemo(() => {
+        const breakdown = {
+            exchange: { totalBase: 0, count: 0 },
+            asset: { totalBase: 0, count: 0 }
+        };
+        funds.forEach(f => {
+            const source = f.source || 'asset';
+            if (breakdown[source]) {
+                breakdown[source].totalBase += (f.baseAmount || 0);
+                breakdown[source].count += 1;
+            }
+        });
+        return breakdown;
+    }, [funds]);
+
     const byCategory = useMemo(() => {
         const map: Record<string, number> = {};
         expenses.forEach(e => {
@@ -61,7 +76,7 @@ export function useTripCalculations(
         return map;
     }, [funds, expenses, returns]);
 
-    return { totals, byCategory, byUser };
+    return { totals, byCategory, byUser, bySource };
 }
 
 
