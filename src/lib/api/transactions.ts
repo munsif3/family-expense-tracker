@@ -1,4 +1,5 @@
 import { db } from '@/lib/firebase';
+import { COLLECTIONS } from '@/lib/firebase/collections';
 import { addDoc, collection, serverTimestamp, Timestamp, updateDoc, doc } from 'firebase/firestore';
 
 export interface TransactionData {
@@ -15,7 +16,7 @@ export interface TransactionData {
 
 export const transactionService = {
     async addTransaction(data: TransactionData, householdId: string, userId: string) {
-        await addDoc(collection(db, 'transactions'), {
+        await addDoc(collection(db, COLLECTIONS.TRANSACTIONS), {
             ...data,
             date: Timestamp.fromDate(data.date),
             householdId,
@@ -29,7 +30,7 @@ export const transactionService = {
     },
 
     async updateTransaction(id: string, data: TransactionData) {
-        await updateDoc(doc(db, 'transactions', id), {
+        await updateDoc(doc(db, COLLECTIONS.TRANSACTIONS, id), {
             ...data,
             date: Timestamp.fromDate(data.date),
         });
@@ -41,7 +42,7 @@ export const transactionService = {
         if (interval === 'monthly') nextRun.setMonth(nextRun.getMonth() + 1);
         if (interval === 'yearly') nextRun.setFullYear(nextRun.getFullYear() + 1);
 
-        await addDoc(collection(db, 'recurring_transactions'), {
+        await addDoc(collection(db, COLLECTIONS.RECURRING_TRANSACTIONS), {
             householdId,
             description: data.description,
             amount: data.amount,

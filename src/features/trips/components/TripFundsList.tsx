@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { toJsDate } from '@/lib/utils';
 import { TripFund, UserProfile } from '@/types';
 import { format } from 'date-fns';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -23,14 +24,12 @@ export function TripFundsList({ funds, participants, onAdd }: TripFundsListProps
         return participants.find(p => p.uid === uid)?.displayName || uid;
     };
 
-    console.log("[TripFundsList] Rendering. Funds:", funds.length, funds);
+
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const formatDate = (date: any) => {
         try {
-            if (date?.toDate) return format(date.toDate(), 'MMM d');
-            if (date instanceof Date) return format(date, 'MMM d');
-            return 'Invalid Date';
+            return format(toJsDate(date), 'MMM d');
         } catch {
             return 'Error';
         }

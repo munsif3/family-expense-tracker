@@ -2,6 +2,7 @@ import { useMemo } from 'react';
 import { TripExpense, TripFund, TripReturn } from '../types';
 import { Timestamp, collection, query, where, getDocs, addDoc, updateDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
+import { toJsDate } from '@/lib/utils';
 
 export function useTripCalculations(
     funds: TripFund[],
@@ -97,7 +98,7 @@ export async function syncTripExpensesToMainTracker(
     const expensesByMonth: Record<string, number> = {};
 
     expenses.forEach(e => {
-        const date = e.date.toDate();
+        const date = toJsDate(e.date);
         const key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`; // YYYY-MM
         expensesByMonth[key] = (expensesByMonth[key] || 0) + (e.baseAmount || 0);
     });

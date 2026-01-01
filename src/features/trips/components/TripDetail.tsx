@@ -12,6 +12,7 @@ import { format } from 'date-fns';
 import { Plus, ArrowLeft } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
+import { toJsDate } from '@/lib/utils';
 
 import { useAuth } from '@/features/auth/AuthContext';
 import { AddTripFundModal } from './AddTripFundModal';
@@ -51,14 +52,9 @@ export function TripDetail({ id }: TripDetailProps) {
     const [isExpenseModalOpen, setIsExpenseModalOpen] = useState(false);
     const [isReturnModalOpen, setIsReturnModalOpen] = useState(false);
 
-    console.log("TripDetail Render Check:", { id, tripLoading, fundsLoading, expensesLoading, returnsLoading, participantsLoading });
-
     if (tripLoading || fundsLoading || expensesLoading || returnsLoading || participantsLoading) {
-        console.log("TripDetail: Loading...");
         return <LoadingSpinner fullScreen />;
     }
-
-    console.log("TripDetail: All loaded. Rendering content. Trip:", trip?.tripName);
 
     if (!trip) {
         return <div>Trip not found</div>;
@@ -75,7 +71,7 @@ export function TripDetail({ id }: TripDetailProps) {
                 <div className="flex justify-between items-start">
                     <div>
                         <h1 className="text-3xl font-bold tracking-tight">{trip.tripName}</h1>
-                        <p className="text-muted-foreground">{trip.location} • {format(trip.startDate.toDate(), 'MMM d')} - {format(trip.endDate.toDate(), 'MMM d, yyyy')}</p>
+                        <p className="text-muted-foreground">{trip.location} • {format(toJsDate(trip.startDate), 'MMM d')} - {format(toJsDate(trip.endDate), 'MMM d, yyyy')}</p>
                     </div>
                     <div className="text-right">
                         <p className="text-sm text-muted-foreground">Net Cost</p>

@@ -1,13 +1,13 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useMemo } from 'react';
 import { useAuth } from '@/features/auth/AuthContext';
-import { orderBy, onSnapshot, limit } from 'firebase/firestore';
+import { orderBy, limit } from 'firebase/firestore';
+import { useFirestoreCollection } from '@/hooks/useFirestoreCollection';
 import { createSecureQuery } from '@/lib/firestoreUtils';
+import { COLLECTIONS } from '@/lib/firebase/collections';
 import { Transaction } from '@/types';
 
 export function useTransactionsList() {
     const { profile } = useAuth();
-    const [transactions, setTransactions] = useState<Transaction[]>([]);
-    const [loading, setLoading] = useState(true);
 
     // Filters
     const [search, setSearch] = useState('');
@@ -16,12 +16,12 @@ export function useTransactionsList() {
     const [viewMode, setViewMode] = useState<'family' | 'personal'>('family');
 
     // Fetch
-    useEffect(() => {
-        if (!profile?.householdId) return;
+    const q = useMemo(() => {
+        if (!profile?.householdId) return null;
 
         // Fetch more for this list view, say 100 recent
-        const q = createSecureQuery({
-            collectionName: 'transactions',
+        return createSecureQuery({
+            collectionName: COLLECTIONS.TRANSACTIONS,
             householdId: profile.householdId,
             // userId: profile.uid, // Omitted to fetch ALL household transactions
             constraints: [
@@ -29,18 +29,9 @@ export function useTransactionsList() {
                 limit(100)
             ]
         });
-
-        const unsubscribe = onSnapshot(q, (snapshot) => {
-            const data = snapshot.docs.map(doc => ({
-                id: doc.id,
-                ...doc.data()
-            })) as Transaction[];
-            setTransactions(data);
-            setLoading(false);
-        });
-
-        return () => unsubscribe();
     }, [profile?.householdId]);
+
+    const { data: transactions, loading } = useFirestoreCollection<Transaction>(q, [q]);
 
     // Client-side filtering via useMemo
     const filtered = useMemo(() => {

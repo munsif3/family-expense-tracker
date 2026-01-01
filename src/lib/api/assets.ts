@@ -1,4 +1,5 @@
 import { db } from '@/lib/firebase';
+import { COLLECTIONS } from '@/lib/firebase/collections';
 import { addDoc, collection, serverTimestamp, Timestamp, updateDoc, doc } from 'firebase/firestore';
 
 export interface AssetData {
@@ -13,7 +14,7 @@ export interface AssetData {
 
 export const assetService = {
     async addAsset(data: AssetData, householdId: string, userId: string, currency: string) {
-        await addDoc(collection(db, 'assets'), {
+        await addDoc(collection(db, COLLECTIONS.ASSETS), {
             ...data,
             buyDate: Timestamp.fromDate(data.buyDate),
             householdId,
@@ -27,7 +28,7 @@ export const assetService = {
     },
 
     async updateAsset(id: string, data: AssetData) {
-        await updateDoc(doc(db, 'assets', id), {
+        await updateDoc(doc(db, COLLECTIONS.ASSETS, id), {
             ...data,
             buyDate: Timestamp.fromDate(data.buyDate),
         });

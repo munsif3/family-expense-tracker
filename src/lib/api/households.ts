@@ -1,4 +1,5 @@
 import { db } from '@/lib/firebase';
+import { COLLECTIONS } from '@/lib/firebase/collections';
 import { doc, setDoc, updateDoc, serverTimestamp, collection, query, where, getDocs, arrayUnion } from 'firebase/firestore';
 import { v4 as uuidv4 } from 'uuid';
 import { generateHouseholdKey, exportKey } from '@/lib/crypto';
@@ -17,8 +18,8 @@ export const householdService = {
      */
     async checkAvailability(name: string): Promise<Household | null> {
         const queries = [
-            query(collection(db, 'households'), where('name_lower', '==', name.toLowerCase())),
-            query(collection(db, 'households'), where('name', '==', name))
+            query(collection(db, COLLECTIONS.HOUSEHOLDS), where('name_lower', '==', name.toLowerCase())),
+            query(collection(db, COLLECTIONS.HOUSEHOLDS), where('name', '==', name))
         ];
 
         const results = await Promise.all(queries.map(q => getDocs(q)));
@@ -54,9 +55,9 @@ export const householdService = {
             }
         };
 
-        await setDoc(doc(db, 'households', householdId), newHousehold);
+        await setDoc(doc(db, COLLECTIONS.HOUSEHOLDS, householdId), newHousehold);
 
-        await updateDoc(doc(db, 'users', user.uid), {
+        await updateDoc(doc(db, COLLECTIONS.USERS, user.uid), {
             householdId: householdId,
             role: 'admin'
         });
@@ -69,12 +70,12 @@ export const householdService = {
      */
     async joinHousehold(householdId: string, user: User): Promise<void> {
         // Add user to household.memberIds
-        await updateDoc(doc(db, 'households', householdId), {
+        await updateDoc(doc(db, COLLECTIONS.HOUSEHOLDS, householdId), {
             memberIds: arrayUnion(user.uid)
         });
 
         // Update User Profile
-        await updateDoc(doc(db, 'users', user.uid), {
+        await updateDoc(doc(db, COLLECTIONS.USERS, user.uid), {
             householdId: householdId,
             role: 'user'
         });

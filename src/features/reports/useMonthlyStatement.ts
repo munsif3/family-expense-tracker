@@ -1,6 +1,7 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useMemo } from 'react';
 import { useAuth } from '@/features/auth/AuthContext';
-import { where, orderBy, onSnapshot } from 'firebase/firestore';
+import { where, orderBy } from 'firebase/firestore';
+import { useFirestoreCollection } from '@/hooks/useFirestoreCollection';
 import { createSecureQuery } from '@/lib/firestoreUtils';
 import { Transaction } from '@/types';
 import { startOfMonth, endOfMonth } from 'date-fns';
@@ -22,21 +23,14 @@ export interface StatementData {
 
 export function useMonthlyStatement(month: number, year: number) {
     const { profile } = useAuth();
-    const [transactions, setTransactions] = useState<Transaction[]>([]);
-    const [loading, setLoading] = useState(true);
 
-    useEffect(() => {
-        if (!profile?.householdId) return;
-
-        // eslint-disable-next-line react-hooks/set-state-in-effect
-        setLoading(true);
+    const q = useMemo(() => {
+        if (!profile?.householdId) return null;
 
         const startDate = startOfMonth(new Date(year, month));
         const endDate = endOfMonth(new Date(year, month));
 
-        // console.log(`[MonthlyReport] Fetching for: ${startDate.toISOString()} to ${endDate.toISOString()} (HH: ${profile.householdId})`);
-
-        const q = createSecureQuery({
+        return createSecureQuery({
             collectionName: 'transactions',
             householdId: profile.householdId,
             userId: profile.uid,
@@ -46,22 +40,9 @@ export function useMonthlyStatement(month: number, year: number) {
                 orderBy('date', 'desc')
             ]
         });
-
-        const unsubscribe = onSnapshot(q, (snapshot) => {
-            const data = snapshot.docs.map(doc => ({
-                id: doc.id,
-                ...doc.data()
-            })) as Transaction[];
-            // console.log(`[MonthlyReport] Received ${data.length} transactions`);
-            setTransactions(data);
-            setLoading(false);
-        }, (error) => {
-            console.error("Monthly Report Query Error:", error);
-            setLoading(false);
-        });
-
-        return () => unsubscribe();
     }, [profile?.householdId, month, year, profile?.uid]);
+
+    const { data: transactions, loading } = useFirestoreCollection<Transaction>(q, [q]);
 
     const statement: StatementData = useMemo(() => {
         const incomeMap: Record<string, number> = {};
