@@ -102,7 +102,7 @@ export default function CalendarPage() {
                                 <div
                                     key={day.toString()}
                                     className={cn(
-                                        "relative border-r border-b p-2 flex flex-col gap-1 transition-colors cursor-pointer group min-h-[80px]",
+                                        "relative border-r border-b p-1 sm:p-2 flex flex-col gap-1 transition-colors cursor-pointer group min-h-[80px]",
                                         !isCurrentMonth && "bg-muted/10 text-muted-foreground/50",
                                         isSelected && "bg-primary/5 ring-1 ring-inset ring-primary z-10",
                                         !isSelected && isCurrentMonth && "hover:bg-muted/30"

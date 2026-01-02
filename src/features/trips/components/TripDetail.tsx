@@ -22,6 +22,7 @@ import { TripFundsList } from './TripFundsList';
 import { TripExpensesList } from './TripExpensesList';
 import { TripReturnsList } from './TripReturnsList';
 import { TripAnalytics } from './TripAnalytics';
+import { TripCurrencyWallet } from './TripCurrencyWallet';
 
 interface TripDetailProps {
     id: string;
@@ -108,6 +109,7 @@ export function TripDetail({ id }: TripDetailProps) {
                 <TabsList>
                     <TabsTrigger value="overview">Overview</TabsTrigger>
                     <TabsTrigger value="funds">Funds</TabsTrigger>
+                    <TabsTrigger value="wallet">Wallet</TabsTrigger>
                     <TabsTrigger value="expenses">Expenses</TabsTrigger>
                     <TabsTrigger value="returns">Returns</TabsTrigger>
                     <TabsTrigger value="analytics">Analytics</TabsTrigger>
@@ -157,6 +159,9 @@ export function TripDetail({ id }: TripDetailProps) {
                         <Button size="sm" onClick={() => setIsFundModalOpen(true)}><Plus className="h-4 w-4 mr-2" />Add Fund</Button>
                     </div>
                     <TripFundsList funds={funds} participants={participants} onAdd={() => setIsFundModalOpen(true)} />
+                </TabsContent>
+                <TabsContent value="wallet" className="space-y-4">
+                    <TripCurrencyWallet trip={trip} funds={funds} expenses={expenses} householdCurrency={householdCurrency} />
                 </TabsContent>
                 <TabsContent value="expenses" className="space-y-4">
                     <div className="flex justify-between items-center">

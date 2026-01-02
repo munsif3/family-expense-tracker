@@ -74,72 +74,119 @@ export function TripExpensesList({ tripId, tripName, expenses, participants, onA
     };
 
     return (
-        <div className="border rounded-md">
-            <Table>
-                <TableHeader>
-                    <TableRow>
-                        <TableHead className="cursor-pointer hover:bg-muted/50" onClick={() => requestSort('date')}>
-                            <div className="flex items-center">Date <SortIcon columnKey="date" sortConfig={sortConfig} /></div>
-                        </TableHead>
-                        <TableHead className="cursor-pointer hover:bg-muted/50" onClick={() => requestSort('category')}>
-                            <div className="flex items-center">Category <SortIcon columnKey="category" sortConfig={sortConfig} /></div>
-                        </TableHead>
-                        <TableHead>Description</TableHead>
-                        <TableHead className="cursor-pointer hover:bg-muted/50" onClick={() => requestSort('paidBy')}>
-                            <div className="flex items-center">Paid By <SortIcon columnKey="paidBy" sortConfig={sortConfig} /></div>
-                        </TableHead>
-                        <TableHead>Amount</TableHead>
-                        <TableHead className="cursor-pointer hover:bg-muted/50" onClick={() => requestSort('baseAmount')}>
-                            <div className="flex items-center">Base Amount <SortIcon columnKey="baseAmount" sortConfig={sortConfig} /></div>
-                        </TableHead>
-                        <TableHead className="w-[50px]"></TableHead>
-                    </TableRow>
-                </TableHeader>
-                <TableBody>
-                    {sortedExpenses.length === 0 ? (
-                        <TableRow>
-                            <TableCell colSpan={7} className="text-center h-32">
-                                <div className="flex flex-col items-center justify-center space-y-2">
-                                    <p className="text-muted-foreground">No expenses recorded yet.</p>
-                                    <Button variant="outline" size="sm" onClick={onAdd}>
-                                        Add First Expense
-                                    </Button>
+
+        <div className="space-y-4">
+            {/* Mobile View (Cards) */}
+            <div className="md:hidden space-y-3">
+                {sortedExpenses.length === 0 ? (
+                    <div className="flex flex-col items-center justify-center space-y-2 py-8 border rounded-lg bg-muted/20">
+                        <p className="text-muted-foreground">No expenses recorded yet.</p>
+                        <Button variant="outline" size="sm" onClick={onAdd}>
+                            Add First Expense
+                        </Button>
+                    </div>
+                ) : (
+                    sortedExpenses.map((expense) => {
+                        const config = CATEGORY_CONFIG[expense.category as ExpenseCategory];
+                        const Icon = config?.icon || ArrowUpDown;
+
+                        return (
+                            <div key={expense.id} className="flex flex-col gap-3 p-4 border rounded-lg bg-card shadow-sm">
+                                <div className="flex items-start justify-between">
+                                    <div className="flex items-center gap-3">
+                                        <div className={`h-10 w-10 flex items-center justify-center rounded-full bg-muted/50 ${config?.color ? config.color.replace('text-', 'bg-').replace('600', '100') : ''}`}>
+                                            <Icon className={`h-5 w-5 ${config?.color}`} />
+                                        </div>
+                                        <div>
+                                            <p className="font-medium line-clamp-1">{expense.notes || expense.category}</p>
+                                            <p className="text-xs text-muted-foreground">{formatDate(expense.date)} • {getName(expense.paidBy)}</p>
+                                        </div>
+                                    </div>
+                                    <div className="text-right">
+                                        <p className="font-bold">{expense.amount.toFixed(2)} <span className="text-xs font-normal text-muted-foreground">{expense.currency}</span></p>
+                                        <p className="text-xs text-muted-foreground">Base: {expense.baseAmount.toFixed(2)}</p>
+                                    </div>
                                 </div>
-                            </TableCell>
-                        </TableRow>
-                    ) : (
-                        sortedExpenses.map((expense) => (
-                            <TableRow key={expense.id}>
-                                <TableCell>{formatDate(expense.date)}</TableCell>
-                                <TableCell className="capitalize">
-                                    {(() => {
-                                        const config = CATEGORY_CONFIG[expense.category as ExpenseCategory];
-                                        if (config) {
-                                            const Icon = config.icon;
-                                            return (
-                                                <div className="flex items-center gap-2">
-                                                    <Icon className={`h-4 w-4 ${config.color}`} />
-                                                    <span>{config.label}</span>
-                                                </div>
-                                            );
-                                        }
-                                        return expense.category;
-                                    })()}
-                                </TableCell>
-                                <TableCell className="max-w-[200px] truncate">{expense.notes}</TableCell>
-                                <TableCell>{getName(expense.paidBy)}</TableCell>
-                                <TableCell>{expense.amount.toFixed(2)} {expense.currency}</TableCell>
-                                <TableCell className="font-medium">{expense.baseAmount.toFixed(2)}</TableCell>
-                                <TableCell>
-                                    <Button variant="ghost" size="icon" onClick={() => setEditingExpense(expense)}>
-                                        <Pencil className="h-4 w-4" />
+                                <div className="flex items-center justify-end gap-2 border-t pt-2 mt-1">
+                                    <Button variant="ghost" size="sm" className="h-8 text-xs text-muted-foreground" onClick={() => setEditingExpense(expense)}>
+                                        <Pencil className="h-3 w-3 mr-1" /> Edit
                                     </Button>
+                                    {/* Could add delete here if needed later */}
+                                </div>
+                            </div>
+                        );
+                    })
+                )}
+            </div>
+
+            {/* Desktop View (Table) - Hidden on Mobile */}
+            <div className="hidden md:block border rounded-md">
+                <Table>
+                    <TableHeader>
+                        <TableRow>
+                            <TableHead className="cursor-pointer hover:bg-muted/50" onClick={() => requestSort('date')}>
+                                <div className="flex items-center">Date <SortIcon columnKey="date" sortConfig={sortConfig} /></div>
+                            </TableHead>
+                            <TableHead className="cursor-pointer hover:bg-muted/50" onClick={() => requestSort('category')}>
+                                <div className="flex items-center">Category <SortIcon columnKey="category" sortConfig={sortConfig} /></div>
+                            </TableHead>
+                            <TableHead>Description</TableHead>
+                            <TableHead className="cursor-pointer hover:bg-muted/50" onClick={() => requestSort('paidBy')}>
+                                <div className="flex items-center">Paid By <SortIcon columnKey="paidBy" sortConfig={sortConfig} /></div>
+                            </TableHead>
+                            <TableHead>Amount</TableHead>
+                            <TableHead className="cursor-pointer hover:bg-muted/50" onClick={() => requestSort('baseAmount')}>
+                                <div className="flex items-center">Base Amount <SortIcon columnKey="baseAmount" sortConfig={sortConfig} /></div>
+                            </TableHead>
+                            <TableHead className="w-[50px]"></TableHead>
+                        </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                        {sortedExpenses.length === 0 ? (
+                            <TableRow>
+                                <TableCell colSpan={7} className="text-center h-32">
+                                    <div className="flex flex-col items-center justify-center space-y-2">
+                                        <p className="text-muted-foreground">No expenses recorded yet.</p>
+                                        <Button variant="outline" size="sm" onClick={onAdd}>
+                                            Add First Expense
+                                        </Button>
+                                    </div>
                                 </TableCell>
                             </TableRow>
-                        ))
-                    )}
-                </TableBody>
-            </Table>
+                        ) : (
+                            sortedExpenses.map((expense) => (
+                                <TableRow key={expense.id}>
+                                    <TableCell>{formatDate(expense.date)}</TableCell>
+                                    <TableCell className="capitalize">
+                                        {(() => {
+                                            const config = CATEGORY_CONFIG[expense.category as ExpenseCategory];
+                                            if (config) {
+                                                const Icon = config.icon;
+                                                return (
+                                                    <div className="flex items-center gap-2">
+                                                        <Icon className={`h-4 w-4 ${config.color}`} />
+                                                        <span>{config.label}</span>
+                                                    </div>
+                                                );
+                                            }
+                                            return expense.category;
+                                        })()}
+                                    </TableCell>
+                                    <TableCell className="max-w-[200px] truncate">{expense.notes}</TableCell>
+                                    <TableCell>{getName(expense.paidBy)}</TableCell>
+                                    <TableCell>{expense.amount.toFixed(2)} {expense.currency}</TableCell>
+                                    <TableCell className="font-medium">{expense.baseAmount.toFixed(2)}</TableCell>
+                                    <TableCell>
+                                        <Button variant="ghost" size="icon" onClick={() => setEditingExpense(expense)}>
+                                            <Pencil className="h-4 w-4" />
+                                        </Button>
+                                    </TableCell>
+                                </TableRow>
+                            ))
+                        )}
+                    </TableBody>
+                </Table>
+            </div>
 
             {editingExpense && (
                 <EditTripExpenseModal

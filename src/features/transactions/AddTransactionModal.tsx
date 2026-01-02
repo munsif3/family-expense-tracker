@@ -85,7 +85,7 @@ export function AddTransactionModal({ transactionToEdit, open, onOpenChange, def
                 </DialogHeader>
                 <form onSubmit={form.handleSubmit(submitTransaction)} className="space-y-4 pt-4">
 
-                    <div className="grid grid-cols-2 gap-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div className="space-y-2">
                             <Label>Type</Label>
                             <Select

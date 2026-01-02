@@ -37,6 +37,8 @@ export interface TripFund {
   conversionRate: number; // manual entry. 1 if currency == base
   baseAmount: number; // derived: amount * conversionRate
   source?: 'exchange' | 'asset'; // 'exchange' = bought with base currency, 'asset' = from existing savings
+  exchangeLocation?: string;
+  country?: string;
 }
 
 export type ExpenseCategory =

@@ -67,84 +67,131 @@ export function TripFundsList({ funds, participants, onAdd }: TripFundsListProps
     });
 
     return (
-        <div className="border rounded-md">
-            <Table>
-                <TableHeader>
-                    <TableRow>
-                        <TableHead>Date</TableHead>
-                        <TableHead
-                            className="cursor-pointer hover:bg-muted/50 transition-colors"
-                            onClick={() => handleSort('contributor')}
-                        >
-                            <div className="flex items-center gap-1">
-                                Contributor
-                                {sortConfig?.key === 'contributor' && (
-                                    <ArrowUpDown className="h-4 w-4" />
-                                )}
-                            </div>
-                        </TableHead>
-                        <TableHead>Mode</TableHead>
-                        <TableHead>Amount</TableHead>
-                        <TableHead
-                            className="cursor-pointer hover:bg-muted/50 transition-colors"
-                            onClick={() => handleSort('baseAmount')}
-                        >
-                            <div className="flex items-center gap-1">
-                                Base Amount
-                                {sortConfig?.key === 'baseAmount' && (
-                                    <ArrowUpDown className="h-4 w-4" />
-                                )}
-                            </div>
-                        </TableHead>
-                        <TableHead className="w-[50px]"></TableHead>
-                    </TableRow>
-                </TableHeader>
-                <TableBody>
-                    {sortedFunds.length === 0 ? (
-                        <TableRow>
-                            <TableCell colSpan={6} className="text-center h-32">
-                                <div className="flex flex-col items-center justify-center space-y-2">
-                                    <p className="text-muted-foreground">No funds recorded yet. Start by adding money.</p>
-                                    <Button variant="outline" size="sm" onClick={onAdd}>Add First Fund</Button>
+
+        <div className="space-y-4">
+            {/* Mobile View (Cards) */}
+            <div className="md:hidden space-y-3">
+                {sortedFunds.length === 0 ? (
+                    <div className="flex flex-col items-center justify-center space-y-2 py-8 border rounded-lg bg-muted/20">
+                        <p className="text-muted-foreground">No funds recorded yet. Start by adding money.</p>
+                        <Button variant="outline" size="sm" onClick={onAdd}>Add First Fund</Button>
+                    </div>
+                ) : (
+                    sortedFunds.map((fund) => (
+                        <div key={fund.id} className="flex flex-col gap-3 p-4 border rounded-lg bg-card shadow-sm">
+                            <div className="flex items-start justify-between">
+                                <div>
+                                    <p className="font-medium">{getName(fund.contributorId)}</p>
+                                    <p className="text-xs text-muted-foreground">{formatDate(fund.date)}</p>
                                 </div>
-                            </TableCell>
+                                <div className="text-right">
+                                    <p className="font-bold">{fund.amount.toFixed(2)} <span className="text-xs font-normal text-muted-foreground">{fund.currency}</span></p>
+                                    <p className="text-xs text-muted-foreground">Base: {fund.baseAmount.toFixed(2)}</p>
+                                </div>
+                            </div>
+
+                            <div className="flex items-center gap-2 flex-wrap">
+                                <Badge variant="secondary" className="capitalize text-xs font-normal">
+                                    {fund.mode.replace('_', ' ')}
+                                </Badge>
+                                {fund.source === 'exchange' && (
+                                    <Badge variant="outline" className="text-[10px] h-5 border-blue-200 bg-blue-50 text-blue-700">Exchange</Badge>
+                                )}
+                                {fund.source === 'asset' && (
+                                    <Badge variant="outline" className="text-[10px] h-5 border-green-200 bg-green-50 text-green-700">Asset</Badge>
+                                )}
+                            </div>
+
+                            <div className="flex items-center justify-end border-t pt-2 mt-1">
+                                <Button variant="ghost" size="sm" className="h-8 text-xs text-muted-foreground" onClick={() => setEditingFund(fund)}>
+                                    <Pencil className="h-3 w-3 mr-1" /> Edit
+                                </Button>
+                            </div>
+                        </div>
+                    ))
+                )}
+            </div>
+
+            {/* Desktop View (Table) */}
+            <div className="hidden md:block border rounded-md">
+                <Table>
+                    <TableHeader>
+                        <TableRow>
+                            <TableHead>Date</TableHead>
+                            <TableHead
+                                className="cursor-pointer hover:bg-muted/50 transition-colors"
+                                onClick={() => handleSort('contributor')}
+                            >
+                                <div className="flex items-center gap-1">
+                                    Contributor
+                                    {sortConfig?.key === 'contributor' && (
+                                        <ArrowUpDown className="h-4 w-4" />
+                                    )}
+                                </div>
+                            </TableHead>
+                            <TableHead>Mode</TableHead>
+                            <TableHead>Amount</TableHead>
+                            <TableHead
+                                className="cursor-pointer hover:bg-muted/50 transition-colors"
+                                onClick={() => handleSort('baseAmount')}
+                            >
+                                <div className="flex items-center gap-1">
+                                    Base Amount
+                                    {sortConfig?.key === 'baseAmount' && (
+                                        <ArrowUpDown className="h-4 w-4" />
+                                    )}
+                                </div>
+                            </TableHead>
+                            <TableHead className="w-[50px]"></TableHead>
                         </TableRow>
-                    ) : (
-                        sortedFunds.map((fund) => (
-                            <TableRow key={fund.id} className="group">
-                                <TableCell>{formatDate(fund.date)}</TableCell>
-                                <TableCell>{getName(fund.contributorId)}</TableCell>
-                                <TableCell>
-                                    <div className="flex flex-col gap-1 items-start">
-                                        <span className="capitalize">{fund.mode.replace('_', ' ')}</span>
-                                        {fund.source === 'exchange' && (
-                                            <Badge variant="outline" className="text-[10px] h-4 px-1 py-0 border-blue-200 bg-blue-50 text-blue-700">Exchange</Badge>
-                                        )}
-                                        {fund.source === 'asset' && (
-                                            <Badge variant="outline" className="text-[10px] h-4 px-1 py-0 border-green-200 bg-green-50 text-green-700">Asset</Badge>
-                                        )}
+                    </TableHeader>
+                    <TableBody>
+                        {sortedFunds.length === 0 ? (
+                            <TableRow>
+                                <TableCell colSpan={6} className="text-center h-32">
+                                    <div className="flex flex-col items-center justify-center space-y-2">
+                                        <p className="text-muted-foreground">No funds recorded yet. Start by adding money.</p>
+                                        <Button variant="outline" size="sm" onClick={onAdd}>Add First Fund</Button>
                                     </div>
                                 </TableCell>
-                                <TableCell>
-                                    <div>{fund.amount.toFixed(2)} {fund.currency}</div>
-                                    {fund.conversionRate !== 1 && (
-                                        <div className="text-xs text-muted-foreground">@ {fund.conversionRate}</div>
-                                    )}
-                                </TableCell>
-                                <TableCell className="font-medium">
-                                    {fund.baseAmount.toFixed(2)}
-                                    <span className="text-xs text-muted-foreground ml-1">{householdCurrency}</span>
-                                </TableCell>
-                                <TableCell>
-                                    <Button variant="ghost" size="icon" className="h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity" onClick={() => setEditingFund(fund)}>
-                                        <Pencil className="h-4 w-4" />
-                                    </Button>
-                                </TableCell>
                             </TableRow>
-                        ))
-                    )}
-                </TableBody>
-            </Table>
+                        ) : (
+                            sortedFunds.map((fund) => (
+                                <TableRow key={fund.id} className="group">
+                                    <TableCell>{formatDate(fund.date)}</TableCell>
+                                    <TableCell>{getName(fund.contributorId)}</TableCell>
+                                    <TableCell>
+                                        <div className="flex flex-col gap-1 items-start">
+                                            <span className="capitalize">{fund.mode.replace('_', ' ')}</span>
+                                            {fund.source === 'exchange' && (
+                                                <Badge variant="outline" className="text-[10px] h-4 px-1 py-0 border-blue-200 bg-blue-50 text-blue-700">Exchange</Badge>
+                                            )}
+                                            {fund.source === 'asset' && (
+                                                <Badge variant="outline" className="text-[10px] h-4 px-1 py-0 border-green-200 bg-green-50 text-green-700">Asset</Badge>
+                                            )}
+                                        </div>
+                                    </TableCell>
+                                    <TableCell>
+                                        <div>{fund.amount.toFixed(2)} {fund.currency}</div>
+                                        {fund.conversionRate !== 1 && (
+                                            <div className="text-xs text-muted-foreground">@ {fund.conversionRate}</div>
+                                        )}
+                                    </TableCell>
+                                    <TableCell className="font-medium">
+                                        {fund.baseAmount.toFixed(2)}
+                                        <span className="text-xs text-muted-foreground ml-1">{householdCurrency}</span>
+                                    </TableCell>
+                                    <TableCell>
+                                        <Button variant="ghost" size="icon" className="h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity" onClick={() => setEditingFund(fund)}>
+                                            <Pencil className="h-4 w-4" />
+                                        </Button>
+                                    </TableCell>
+                                </TableRow>
+                            ))
+                        )}
+                    </TableBody>
+                </Table>
+            </div>
 
             <EditTripFundModal
                 tripId={funds[0]?.tripId || ''} // Fallback might be issue if empty but modal wont open

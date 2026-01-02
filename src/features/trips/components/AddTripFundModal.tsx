@@ -36,6 +36,8 @@ const fundSchema = z.object({
     currency: z.string().min(1),
     conversionRate: z.number().positive(),
     source: z.enum(['exchange', 'asset']),
+    exchangeLocation: z.string().optional(),
+    country: z.string().optional(),
 });
 
 type FundFormData = z.infer<typeof fundSchema>;
@@ -72,6 +74,8 @@ export function AddTripFundModal({ tripId, participants: tripParticipants, open,
             currency: 'USD',
             conversionRate: 1,
             source: 'asset',
+            exchangeLocation: '',
+            country: '',
         }
     });
 
@@ -92,6 +96,8 @@ export function AddTripFundModal({ tripId, participants: tripParticipants, open,
                 conversionRate: data.conversionRate,
                 baseAmount: data.amount * data.conversionRate,
                 source: data.source,
+                exchangeLocation: data.source === 'exchange' ? data.exchangeLocation : undefined,
+                country: data.source === 'exchange' ? data.country : undefined,
             });
 
             // Allow immediate adding of another? No, close for now.
@@ -280,6 +286,24 @@ export function AddTripFundModal({ tripId, participants: tripParticipants, open,
                                     <p className="text-xs text-muted-foreground text-right mt-1">
                                         Rate: {watch('conversionRate')?.toFixed(4)}
                                     </p>
+                                    <div className="grid grid-cols-2 gap-4 mt-2">
+                                        <div className="space-y-2">
+                                            <Label htmlFor="exchangeLocation">Exchange/Bank Name</Label>
+                                            <Input
+                                                id="exchangeLocation"
+                                                placeholder="e.g. Al Ansari"
+                                                {...register("exchangeLocation")}
+                                            />
+                                        </div>
+                                        <div className="space-y-2">
+                                            <Label htmlFor="country">Country</Label>
+                                            <Input
+                                                id="country"
+                                                placeholder="e.g. UAE"
+                                                {...register("country")}
+                                            />
+                                        </div>
+                                    </div>
                                 </>
                             ) : (
                                 <>

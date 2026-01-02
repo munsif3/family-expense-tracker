@@ -36,6 +36,8 @@ const fundSchema = z.object({
     currency: z.string().min(1),
     conversionRate: z.number().positive(),
     source: z.enum(['exchange', 'asset']),
+    exchangeLocation: z.string().optional(),
+    country: z.string().optional(),
 });
 
 type FundFormData = z.infer<typeof fundSchema>;
@@ -69,6 +71,8 @@ export function EditTripFundModal({ tripId, fund, participants: tripParticipants
             currency: 'USD',
             conversionRate: 1,
             source: 'asset',
+            exchangeLocation: '',
+            country: '',
         }
     });
 
@@ -89,6 +93,8 @@ export function EditTripFundModal({ tripId, fund, participants: tripParticipants
             setValue('currency', fund.currency);
             setValue('conversionRate', fund.conversionRate);
             setValue('source', fund.source || 'asset');
+            setValue('exchangeLocation', fund.exchangeLocation || '');
+            setValue('country', fund.country || '');
 
             // Check for custom values
             if (!['card', 'cash', 'transfer', 'usd_cash', 'eur_cash', 'aed_cash'].includes(fund.mode)) {
@@ -134,6 +140,8 @@ export function EditTripFundModal({ tripId, fund, participants: tripParticipants
                 conversionRate: data.conversionRate,
                 baseAmount: data.amount * data.conversionRate,
                 source: data.source,
+                exchangeLocation: data.source === 'exchange' ? data.exchangeLocation : undefined,
+                country: data.source === 'exchange' ? data.country : undefined,
             });
 
             reset();
@@ -314,6 +322,24 @@ export function EditTripFundModal({ tripId, fund, participants: tripParticipants
                                     <p className="text-xs text-muted-foreground text-right mt-1">
                                         Rate: {watch('conversionRate')?.toFixed(4)}
                                     </p>
+                                    <div className="grid grid-cols-2 gap-4 mt-2">
+                                        <div className="space-y-2">
+                                            <Label htmlFor="exchangeLocation">Exchange/Bank Name</Label>
+                                            <Input
+                                                id="exchangeLocation"
+                                                placeholder="e.g. Al Ansari"
+                                                {...register("exchangeLocation")}
+                                            />
+                                        </div>
+                                        <div className="space-y-2">
+                                            <Label htmlFor="country">Country</Label>
+                                            <Input
+                                                id="country"
+                                                placeholder="e.g. UAE"
+                                                {...register("country")}
+                                            />
+                                        </div>
+                                    </div>
                                 </>
                             ) : (
                                 <>
