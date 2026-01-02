@@ -39,6 +39,12 @@ export interface TripFund {
   source?: 'exchange' | 'asset'; // 'exchange' = bought with base currency, 'asset' = from existing savings
   exchangeLocation?: string;
   country?: string;
+  description?: string;
+  isPfc?: boolean;
+  pfcOwnerId?: string;
+  isReimbursed?: boolean;
+  reimbursedBy?: string;
+  reimbursementAmount?: number;
 }
 
 export type ExpenseCategory =

@@ -161,7 +161,7 @@ export function TripDetail({ id }: TripDetailProps) {
                     <TripFundsList funds={funds} participants={participants} onAdd={() => setIsFundModalOpen(true)} />
                 </TabsContent>
                 <TabsContent value="wallet" className="space-y-4">
-                    <TripCurrencyWallet trip={trip} funds={funds} expenses={expenses} householdCurrency={householdCurrency} />
+                    <TripCurrencyWallet trip={trip} funds={funds} expenses={expenses} householdCurrency={householdCurrency} participants={participants} />
                 </TabsContent>
                 <TabsContent value="expenses" className="space-y-4">
                     <div className="flex justify-between items-center">

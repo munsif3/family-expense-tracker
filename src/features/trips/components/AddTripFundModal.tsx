@@ -38,6 +38,11 @@ const fundSchema = z.object({
     source: z.enum(['exchange', 'asset']),
     exchangeLocation: z.string().optional(),
     country: z.string().optional(),
+    isPfc: z.boolean().optional(),
+    pfcOwnerId: z.string().optional(),
+    isReimbursed: z.boolean().optional(),
+    reimbursedBy: z.string().optional(),
+    reimbursementAmount: z.number().optional(),
 });
 
 type FundFormData = z.infer<typeof fundSchema>;
@@ -76,6 +81,11 @@ export function AddTripFundModal({ tripId, participants: tripParticipants, open,
             source: 'asset',
             exchangeLocation: '',
             country: '',
+            isPfc: false,
+            pfcOwnerId: '',
+            isReimbursed: false,
+            reimbursedBy: '',
+            reimbursementAmount: 0,
         }
     });
 
@@ -96,8 +106,19 @@ export function AddTripFundModal({ tripId, participants: tripParticipants, open,
                 conversionRate: data.conversionRate,
                 baseAmount: data.amount * data.conversionRate,
                 source: data.source,
-                exchangeLocation: data.source === 'exchange' ? data.exchangeLocation : undefined,
-                country: data.source === 'exchange' ? data.country : undefined,
+                ...(data.source === 'exchange' ? {
+                    exchangeLocation: data.exchangeLocation,
+                    country: data.country
+                } : {}),
+
+                // PFC Fields
+                ...(data.source === 'asset' && data.isPfc ? {
+                    isPfc: true,
+                    pfcOwnerId: data.pfcOwnerId,
+                    isReimbursed: data.isReimbursed,
+                    reimbursedBy: data.reimbursedBy,
+                    reimbursementAmount: data.reimbursementAmount
+                } : {})
             });
 
             // Allow immediate adding of another? No, close for now.
@@ -253,6 +274,74 @@ export function AddTripFundModal({ tripId, participants: tripParticipants, open,
                         </div>
                     </div>
 
+                    {watch('source') === 'asset' && (
+                        <div className="space-y-4 border p-3 rounded-md bg-muted/20">
+                            <div className="flex items-center space-x-2">
+                                <input
+                                    type="checkbox"
+                                    id="isPfc"
+                                    className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
+                                    {...register('isPfc')}
+                                />
+                                <Label htmlFor="isPfc" className="font-medium">From Personal Foreign Currency Account?</Label>
+                            </div>
+
+                            {watch('isPfc') && (
+                                <div className="space-y-4 pl-6 animate-in fade-in zoom-in-95 duration-200">
+                                    <div className="space-y-2">
+                                        <Label htmlFor="pfcOwnerId">Account Owner</Label>
+                                        <Select onValueChange={(val) => setValue('pfcOwnerId', val)} defaultValue={household?.memberIds?.[0]}>
+                                            <SelectTrigger>
+                                                <SelectValue placeholder="Select Owner" />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                {householdMembers.map(user => (
+                                                    <SelectItem key={user.uid} value={user.uid}>{user.displayName || user.email}</SelectItem>
+                                                ))}
+                                            </SelectContent>
+                                        </Select>
+                                    </div>
+
+                                    <div className="flex items-center space-x-2 pt-2">
+                                        <input
+                                            type="checkbox"
+                                            id="isReimbursed"
+                                            className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
+                                            {...register('isReimbursed')}
+                                        />
+                                        <Label htmlFor="isReimbursed">Was this reimbursed?</Label>
+                                    </div>
+
+                                    {watch('isReimbursed') && (
+                                        <div className="grid grid-cols-2 gap-4">
+                                            <div className="space-y-2">
+                                                <Label htmlFor="reimbursedBy">Paid By (in {household?.currency})</Label>
+                                                <Select onValueChange={(val) => setValue('reimbursedBy', val)}>
+                                                    <SelectTrigger>
+                                                        <SelectValue placeholder="Select Payer" />
+                                                    </SelectTrigger>
+                                                    <SelectContent>
+                                                        {householdMembers.map(user => (
+                                                            <SelectItem key={user.uid} value={user.uid}>{user.displayName || user.email}</SelectItem>
+                                                        ))}
+                                                    </SelectContent>
+                                                </Select>
+                                            </div>
+                                            <div className="space-y-2">
+                                                <Label htmlFor="reimbursementAmount">Amount ({household?.currency})</Label>
+                                                <Input
+                                                    type="number"
+                                                    step="0.01"
+                                                    {...register('reimbursementAmount', { valueAsNumber: true })}
+                                                />
+                                            </div>
+                                        </div>
+                                    )}
+                                </div>
+                            )}
+                        </div>
+                    )}
+
                     <div className="grid grid-cols-2 gap-4">
                         <div className="space-y-2">
                             <Label htmlFor="amount">Amount {watch('currency') !== 'Base' && `(${watch('currency')})`}</Label>
@@ -267,43 +356,9 @@ export function AddTripFundModal({ tripId, participants: tripParticipants, open,
                         <div className="space-y-2">
                             {watch('source') === 'exchange' ? (
                                 <>
-                                    <Label htmlFor="totalCost">Total Cost ({household?.currency || 'Base'})</Label>
-                                    <Input
-                                        key="input-total-cost"
-                                        id="totalCost"
-                                        type="number"
-                                        step="0.01"
-                                        defaultValue={baseAmount ? Number(baseAmount.toFixed(2)) : ''}
-                                        placeholder="Total LKR spent"
-                                        onChange={(e) => {
-                                            const cost = parseFloat(e.target.value);
-                                            const amt = watch('amount');
-                                            if (cost && amt) {
-                                                setValue('conversionRate', cost / amt);
-                                            }
-                                        }}
-                                    />
                                     <p className="text-xs text-muted-foreground text-right mt-1">
                                         Rate: {watch('conversionRate')?.toFixed(4)}
                                     </p>
-                                    <div className="grid grid-cols-2 gap-4 mt-2">
-                                        <div className="space-y-2">
-                                            <Label htmlFor="exchangeLocation">Exchange/Bank Name</Label>
-                                            <Input
-                                                id="exchangeLocation"
-                                                placeholder="e.g. Al Ansari"
-                                                {...register("exchangeLocation")}
-                                            />
-                                        </div>
-                                        <div className="space-y-2">
-                                            <Label htmlFor="country">Country</Label>
-                                            <Input
-                                                id="country"
-                                                placeholder="e.g. UAE"
-                                                {...register("country")}
-                                            />
-                                        </div>
-                                    </div>
                                 </>
                             ) : (
                                 <>
@@ -319,6 +374,27 @@ export function AddTripFundModal({ tripId, participants: tripParticipants, open,
                             )}
                         </div>
                     </div>
+
+                    {watch('source') === 'exchange' && (
+                        <div className="grid grid-cols-2 gap-4">
+                            <div className="space-y-2">
+                                <Label htmlFor="exchangeLocation">Exchange/Bank Name</Label>
+                                <Input
+                                    id="exchangeLocation"
+                                    placeholder="e.g. Al Ansari"
+                                    {...register("exchangeLocation")}
+                                />
+                            </div>
+                            <div className="space-y-2">
+                                <Label htmlFor="country">Country</Label>
+                                <Input
+                                    id="country"
+                                    placeholder="e.g. UAE"
+                                    {...register("country")}
+                                />
+                            </div>
+                        </div>
+                    )}
 
                     <div className="p-2 bg-muted rounded text-sm text-center">
                         Base Amount: <span className="font-bold">{baseAmount.toFixed(2)}</span>

@@ -12,14 +12,17 @@ import {
     TrendingDown
 } from 'lucide-react';
 
+import { UserProfile } from '@/types';
+
 interface TripCurrencyWalletProps {
     trip: Trip;
     funds: TripFund[];
     expenses: TripExpense[];
     householdCurrency: string;
+    participants: UserProfile[];
 }
 
-export function TripCurrencyWallet({ trip, funds, expenses, householdCurrency }: TripCurrencyWalletProps) {
+export function TripCurrencyWallet({ trip, funds, expenses, householdCurrency, participants }: TripCurrencyWalletProps) {
 
     // Group funds and expenses by currency
     const balances = useMemo(() => {
@@ -148,16 +151,26 @@ export function TripCurrencyWallet({ trip, funds, expenses, householdCurrency }:
                                         <TabsTrigger value="spending" className="text-xs">Top Events</TabsTrigger>
                                     </TabsList>
                                     <TabsContent value="exchanges" className="max-h-[150px] overflow-y-auto space-y-2 pt-2">
-                                        {balance.transactions.filter(t => t.source === 'exchange').length > 0 ? (
-                                            balance.transactions.filter(t => t.source === 'exchange').map(t => (
+                                        {balance.transactions.filter(t => t.source === 'exchange' || t.isPfc).length > 0 ? (
+                                            balance.transactions.filter(t => t.source === 'exchange' || t.isPfc).map(t => (
                                                 <div key={t.id} className="text-xs flex justify-between items-center bg-muted/30 p-2 rounded">
                                                     <div>
                                                         <div className="font-medium flex items-center gap-1">
-                                                            <Globe className="h-3 w-3" />
-                                                            {t.exchangeLocation || 'Unknown Exchange'}
+                                                            {t.source === 'exchange' ? (
+                                                                <Globe className="h-3 w-3" />
+                                                            ) : (
+                                                                <Wallet className="h-3 w-3" />
+                                                            )}
+                                                            {t.source === 'exchange' ? (
+                                                                t.exchangeLocation || 'Unknown Exchange'
+                                                            ) : (
+                                                                <span>PFC ({participants.find(p => p.uid === t.pfcOwnerId)?.displayName || 'Unknown'})</span>
+                                                            )}
                                                         </div>
                                                         <div className="text-[10px] text-muted-foreground">
-                                                            {t.date.toDate().toLocaleDateString()} • {t.country}
+                                                            {t.date.toDate().toLocaleDateString()}
+                                                            {t.country && ` • ${t.country}`}
+                                                            {t.isReimbursed && ` • Reimbursed`}
                                                         </div>
                                                     </div>
                                                     <div className="text-right">
