@@ -12,7 +12,7 @@ import { format } from 'date-fns';
 import { Plus, ArrowLeft } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
-import { toJsDate } from '@/lib/utils';
+import { toJsDate, formatCurrency } from '@/lib/utils';
 
 import { useAuth } from '@/features/auth/AuthContext';
 import { AddTripFundModal } from './AddTripFundModal';
@@ -84,7 +84,7 @@ export function TripDetail({ id }: TripDetailProps) {
                     </div>
                     <div className="text-right">
                         <p className="text-sm text-muted-foreground">Net Cost</p>
-                        <p className="text-2xl font-bold mb-4">{totals.netCost.toFixed(2)} <span className="text-sm font-normal text-muted-foreground">Base</span></p>
+                        <p className="text-2xl font-bold mb-4">{formatCurrency(totals.netCost)} <span className="text-sm font-normal text-muted-foreground">Base</span></p>
                         <div className="flex gap-2 justify-end">
                             <Button variant="outline" size="sm" onClick={() => setIsFundModalOpen(true)}><Plus className="h-4 w-4 mr-2" />Add Fund</Button>
                             <Button size="sm" onClick={() => setIsExpenseModalOpen(true)}><Plus className="h-4 w-4 mr-2" />Add Expense</Button>
@@ -97,19 +97,19 @@ export function TripDetail({ id }: TripDetailProps) {
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                 <Card>
                     <CardHeader className="pb-2"><CardTitle className="text-sm font-medium">Total Funds</CardTitle></CardHeader>
-                    <CardContent><div className="text-2xl font-bold">{totals.totalFunds.toFixed(2)} <span className="text-sm font-normal text-muted-foreground">{householdCurrency}</span></div></CardContent>
+                    <CardContent><div className="text-2xl font-bold">{formatCurrency(totals.totalFunds)} <span className="text-sm font-normal text-muted-foreground">{householdCurrency}</span></div></CardContent>
                 </Card>
                 <Card>
                     <CardHeader className="pb-2"><CardTitle className="text-sm font-medium">Total Expenses</CardTitle></CardHeader>
-                    <CardContent><div className="text-2xl font-bold">{totals.totalExpenses.toFixed(2)} <span className="text-sm font-normal text-muted-foreground">{householdCurrency}</span></div></CardContent>
+                    <CardContent><div className="text-2xl font-bold">{formatCurrency(totals.totalExpenses)} <span className="text-sm font-normal text-muted-foreground">{householdCurrency}</span></div></CardContent>
                 </Card>
                 <Card>
                     <CardHeader className="pb-2"><CardTitle className="text-sm font-medium">Returns</CardTitle></CardHeader>
-                    <CardContent><div className="text-2xl font-bold">{totals.totalReturns.toFixed(2)} <span className="text-sm font-normal text-muted-foreground">{householdCurrency}</span></div></CardContent>
+                    <CardContent><div className="text-2xl font-bold">{formatCurrency(totals.totalReturns)} <span className="text-sm font-normal text-muted-foreground">{householdCurrency}</span></div></CardContent>
                 </Card>
                 <Card>
                     <CardHeader className="pb-2"><CardTitle className="text-sm font-medium">Remaining Funds</CardTitle></CardHeader>
-                    <CardContent><div className={`text-2xl font-bold ${totals.remainingFunds < 0 ? 'text-red-500' : 'text-green-500'}`}>{totals.remainingFunds.toFixed(2)} <span className="text-sm font-normal text-muted-foreground">{householdCurrency}</span></div></CardContent>
+                    <CardContent><div className={`text-2xl font-bold ${totals.remainingFunds < 0 ? 'text-red-500' : 'text-green-500'}`}>{formatCurrency(totals.remainingFunds)} <span className="text-sm font-normal text-muted-foreground">{householdCurrency}</span></div></CardContent>
                 </Card>
             </div>
 
@@ -131,11 +131,11 @@ export function TripDetail({ id }: TripDetailProps) {
                                     <div key={userId} className="flex justify-between items-center py-2 border-b last:border-0">
                                         <span className="font-medium">{getName(userId)}</span>
                                         <div className="flex gap-4 text-sm">
-                                            <span className="text-green-600">In: {stats.contributed.toFixed(2)}</span>
-                                            <span className="text-red-600">Out: {stats.spent.toFixed(2)}</span>
-                                            {stats.received > 0 && <span className="text-blue-600">Got: {stats.received.toFixed(2)}</span>}
+                                            <span className="text-green-600">In: {formatCurrency(stats.contributed)}</span>
+                                            <span className="text-red-600">Out: {formatCurrency(stats.spent)}</span>
+                                            {stats.received > 0 && <span className="text-blue-600">Got: {formatCurrency(stats.received)}</span>}
                                             <span className={stats.balance >= 0 ? 'text-gray-900 font-bold' : 'text-red-900 font-bold'}>
-                                                Net: {stats.balance.toFixed(2)}
+                                                Net: {formatCurrency(stats.balance)}
                                             </span>
                                         </div>
                                     </div>
@@ -149,14 +149,14 @@ export function TripDetail({ id }: TripDetailProps) {
                         <Card>
                             <CardHeader className="pb-2"><CardTitle className="text-sm font-medium">Assets (Savings)</CardTitle></CardHeader>
                             <CardContent>
-                                <div className="text-2xl font-bold">{bySource.asset.totalBase.toFixed(2)} <span className="text-sm font-normal text-muted-foreground">{householdCurrency}</span></div>
+                                <div className="text-2xl font-bold">{formatCurrency(bySource.asset.totalBase)} <span className="text-sm font-normal text-muted-foreground">{householdCurrency}</span></div>
                                 <p className="text-xs text-muted-foreground">{bySource.asset.count} contributions</p>
                             </CardContent>
                         </Card>
                         <Card>
                             <CardHeader className="pb-2"><CardTitle className="text-sm font-medium">Exchange (Bought)</CardTitle></CardHeader>
                             <CardContent>
-                                <div className="text-2xl font-bold">{bySource.exchange.totalBase.toFixed(2)} <span className="text-sm font-normal text-muted-foreground">{householdCurrency}</span></div>
+                                <div className="text-2xl font-bold">{formatCurrency(bySource.exchange.totalBase)} <span className="text-sm font-normal text-muted-foreground">{householdCurrency}</span></div>
                                 <p className="text-xs text-muted-foreground">{bySource.exchange.count} contributions</p>
                             </CardContent>
                         </Card>

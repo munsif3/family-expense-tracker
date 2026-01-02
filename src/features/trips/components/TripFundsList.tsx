@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { toJsDate } from '@/lib/utils';
+import { toJsDate, formatCurrency } from '@/lib/utils';
 import { TripFund, UserProfile } from '@/types';
 import { format } from 'date-fns';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -85,8 +85,8 @@ export function TripFundsList({ funds, participants, onAdd }: TripFundsListProps
                                     <p className="text-xs text-muted-foreground">{formatDate(fund.date)}</p>
                                 </div>
                                 <div className="text-right">
-                                    <p className="font-bold">{fund.amount.toFixed(2)} <span className="text-xs font-normal text-muted-foreground">{fund.currency}</span></p>
-                                    <p className="text-xs text-muted-foreground">Base: {fund.baseAmount.toFixed(2)}</p>
+                                    <p className="font-bold">{formatCurrency(fund.amount, fund.currency)}</p>
+                                    <p className="text-xs text-muted-foreground">Base: {formatCurrency(fund.baseAmount)}</p>
                                 </div>
                             </div>
 
@@ -172,14 +172,13 @@ export function TripFundsList({ funds, participants, onAdd }: TripFundsListProps
                                         </div>
                                     </TableCell>
                                     <TableCell>
-                                        <div>{fund.amount.toFixed(2)} {fund.currency}</div>
+                                        <div>{formatCurrency(fund.amount, fund.currency)}</div>
                                         {fund.conversionRate !== 1 && (
                                             <div className="text-xs text-muted-foreground">@ {fund.conversionRate}</div>
                                         )}
                                     </TableCell>
                                     <TableCell className="font-medium">
-                                        {fund.baseAmount.toFixed(2)}
-                                        <span className="text-xs text-muted-foreground ml-1">{householdCurrency}</span>
+                                        {formatCurrency(fund.baseAmount)}
                                     </TableCell>
                                     <TableCell>
                                         <Button variant="ghost" size="icon" className="h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity" onClick={() => setEditingFund(fund)}>

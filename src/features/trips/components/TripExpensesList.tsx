@@ -1,5 +1,5 @@
 import { TripExpense, UserProfile, ExpenseCategory } from '@/types';
-import { toJsDate } from '@/lib/utils';
+import { toJsDate, formatCurrency } from '@/lib/utils';
 import { format } from 'date-fns';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
@@ -103,8 +103,8 @@ export function TripExpensesList({ tripId, tripName, expenses, participants, onA
                                         </div>
                                     </div>
                                     <div className="text-right">
-                                        <p className="font-bold">{expense.amount.toFixed(2)} <span className="text-xs font-normal text-muted-foreground">{expense.currency}</span></p>
-                                        <p className="text-xs text-muted-foreground">Base: {expense.baseAmount.toFixed(2)}</p>
+                                        <p className="font-bold">{formatCurrency(expense.amount, expense.currency)}</p>
+                                        <p className="text-xs text-muted-foreground">Base: {formatCurrency(expense.baseAmount)}</p>
                                     </div>
                                 </div>
                                 <div className="flex items-center justify-end gap-2 border-t pt-2 mt-1">
@@ -174,8 +174,8 @@ export function TripExpensesList({ tripId, tripName, expenses, participants, onA
                                     </TableCell>
                                     <TableCell className="max-w-[200px] truncate">{expense.notes}</TableCell>
                                     <TableCell>{getName(expense.paidBy)}</TableCell>
-                                    <TableCell>{expense.amount.toFixed(2)} {expense.currency}</TableCell>
-                                    <TableCell className="font-medium">{expense.baseAmount.toFixed(2)}</TableCell>
+                                    <TableCell>{formatCurrency(expense.amount, expense.currency)}</TableCell>
+                                    <TableCell className="font-medium">{formatCurrency(expense.baseAmount)}</TableCell>
                                     <TableCell>
                                         <Button variant="ghost" size="icon" onClick={() => setEditingExpense(expense)}>
                                             <Pencil className="h-4 w-4" />

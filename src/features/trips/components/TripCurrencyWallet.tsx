@@ -2,6 +2,7 @@
 
 import { useMemo } from 'react';
 import { Trip, TripFund, TripExpense } from '@/features/trips/types';
+import { formatCurrency } from '@/lib/utils';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
@@ -113,9 +114,7 @@ export function TripCurrencyWallet({ trip, funds, expenses, householdCurrency, p
                                         <Coins className="h-5 w-5 text-primary" />
                                         {balance.currency}
                                     </div>
-                                    <div className="text-sm font-normal text-muted-foreground bg-background px-2 py-1 rounded border">
-                                        Avg Rate: {balance.avgRate.toFixed(2)}
-                                    </div>
+                                    Avg Rate: {balance.avgRate.toFixed(2)}
                                 </CardTitle>
                             </CardHeader>
                             <CardContent className="pt-4 space-y-4">
@@ -123,13 +122,13 @@ export function TripCurrencyWallet({ trip, funds, expenses, householdCurrency, p
                                     <div>
                                         <p className="text-xs text-muted-foreground uppercase tracking-wider">Bought</p>
                                         <p className="text-xl font-bold text-green-600">
-                                            {balance.bought.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 2 })}
+                                            {formatCurrency(balance.bought, balance.currency)}
                                         </p>
                                     </div>
                                     <div className="text-right">
                                         <p className="text-xs text-muted-foreground uppercase tracking-wider">Remaining</p>
                                         <p className={`text-xl font-bold ${balance.remaining < 0 ? 'text-red-500' : 'text-primary'}`}>
-                                            {balance.remaining.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 2 })}
+                                            {formatCurrency(balance.remaining, balance.currency)}
                                         </p>
                                     </div>
                                 </div>
@@ -140,7 +139,7 @@ export function TripCurrencyWallet({ trip, funds, expenses, householdCurrency, p
                                             <TrendingDown className="h-3 w-3" /> Spent
                                         </span>
                                         <span className="font-medium">
-                                            {balance.spent.toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                                            {formatCurrency(balance.spent, balance.currency)}
                                         </span>
                                     </div>
                                 </div>
@@ -174,7 +173,7 @@ export function TripCurrencyWallet({ trip, funds, expenses, householdCurrency, p
                                                         </div>
                                                     </div>
                                                     <div className="text-right">
-                                                        <div className="font-bold text-green-600">+{t.amount}</div>
+                                                        <div className="font-bold text-green-600">+{formatCurrency(t.amount, t.currency)}</div>
                                                         <div className="text-[10px] text-muted-foreground">Rate: {t.conversionRate.toFixed(2)}</div>
                                                     </div>
                                                 </div>
@@ -190,7 +189,7 @@ export function TripCurrencyWallet({ trip, funds, expenses, householdCurrency, p
                                                     <div className="font-medium">{s.category}</div>
                                                     <div className="text-[10px] text-muted-foreground">{s.date.toDate().toLocaleDateString()}</div>
                                                 </div>
-                                                <div className="font-medium">-{s.amount}</div>
+                                                <div className="font-medium">-{formatCurrency(s.amount, s.currency)}</div>
                                             </div>
                                         ))}
                                     </TabsContent>

@@ -1,5 +1,6 @@
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { formatCurrency } from '@/lib/utils';
 import { UserProfile, TripFund, TripExpense, TripReturn } from "@/types";
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend, BarChart, Bar, XAxis, YAxis, CartesianGrid } from 'recharts';
 import { useTripCalculations } from "../hooks/useTripCalculations";
@@ -93,7 +94,7 @@ export function TripAnalytics({ funds, expenses, returns, participants }: TripAn
                                     ))}
                                 </Pie>
                                 {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-                                <Tooltip formatter={(value: any) => value.toFixed(2)} />
+                                <Tooltip formatter={(value: any) => formatCurrency(value)} />
                             </PieChart>
                         </ResponsiveContainer>
                     </CardContent>
@@ -111,7 +112,7 @@ export function TripAnalytics({ funds, expenses, returns, participants }: TripAn
                                 <XAxis type="number" />
                                 <YAxis dataKey="name" type="category" width={80} />
                                 {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-                                <Tooltip formatter={(value: any) => value?.toFixed(2)} />
+                                <Tooltip formatter={(value: any) => formatCurrency(value)} />
                                 <Legend />
                                 <Bar dataKey="Net" fill="#8884d8">
                                     {balanceData.map((entry, index) => (

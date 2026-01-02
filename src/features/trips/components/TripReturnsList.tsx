@@ -1,4 +1,5 @@
 
+import { formatCurrency } from '@/lib/utils';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { format } from 'date-fns';
 import { TripReturn, UserProfile } from "@/types";
@@ -45,9 +46,9 @@ export function TripReturnsList({ returns, participants, onAdd }: TripReturnsLis
                                 <p className="text-xs text-muted-foreground">{format(ret.date.toDate(), 'MMM d, yyyy')} • {getName(ret.receivedBy)}</p>
                             </div>
                             <div className="text-right">
-                                <p className="font-bold">{ret.currency} {ret.amount.toFixed(2)}</p>
+                                <p className="font-bold">{formatCurrency(ret.amount, ret.currency)}</p>
                                 {ret.conversionRate !== 1 && (
-                                    <p className="text-xs text-muted-foreground">Base: {ret.baseAmount.toFixed(2)}</p>
+                                    <p className="text-xs text-muted-foreground">Base: {formatCurrency(ret.baseAmount)}</p>
                                 )}
                             </div>
                         </div>
@@ -73,10 +74,10 @@ export function TripReturnsList({ returns, participants, onAdd }: TripReturnsLis
                                 <TableCell>{ret.description}</TableCell>
                                 <TableCell>{getName(ret.receivedBy)}</TableCell>
                                 <TableCell className="text-right font-medium">
-                                    {ret.currency} {ret.amount.toFixed(2)}
+                                    {formatCurrency(ret.amount, ret.currency)}
                                     {ret.conversionRate !== 1 && (
                                         <div className="text-xs text-muted-foreground">
-                                            (Base: {ret.baseAmount.toFixed(2)})
+                                            (Base: {formatCurrency(ret.baseAmount)})
                                         </div>
                                     )}
                                 </TableCell>

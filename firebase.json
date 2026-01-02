@@ -9,6 +9,7 @@
     "hosting": {
         "site": "family-finance-manager",
         "public": "out",
+        "cleanUrls": true,
         "ignore": [
             "firebase.json",
             "**/.*",
