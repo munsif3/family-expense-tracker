@@ -23,6 +23,8 @@ import { TripExpensesList } from './TripExpensesList';
 import { TripReturnsList } from './TripReturnsList';
 import { TripAnalytics } from './TripAnalytics';
 import { TripCurrencyWallet } from './TripCurrencyWallet';
+import { EditTripModal } from './EditTripModal';
+import { Settings as SettingsIcon } from 'lucide-react';
 
 interface TripDetailProps {
     id: string;
@@ -52,6 +54,7 @@ export function TripDetail({ id }: TripDetailProps) {
     const [isFundModalOpen, setIsFundModalOpen] = useState(false);
     const [isExpenseModalOpen, setIsExpenseModalOpen] = useState(false);
     const [isReturnModalOpen, setIsReturnModalOpen] = useState(false);
+    const [isEditModalOpen, setIsEditModalOpen] = useState(false);
 
     if (tripLoading || fundsLoading || expensesLoading || returnsLoading || participantsLoading) {
         return <LoadingSpinner fullScreen />;
@@ -71,7 +74,12 @@ export function TripDetail({ id }: TripDetailProps) {
                 </Button>
                 <div className="flex justify-between items-start">
                     <div>
-                        <h1 className="text-3xl font-bold tracking-tight">{trip.tripName}</h1>
+                        <div className="flex items-center gap-2">
+                            <h1 className="text-3xl font-bold tracking-tight">{trip.tripName}</h1>
+                            <Button variant="ghost" size="icon" onClick={() => setIsEditModalOpen(true)}>
+                                <SettingsIcon className="h-5 w-5 text-muted-foreground" />
+                            </Button>
+                        </div>
                         <p className="text-muted-foreground">{trip.location} • {format(toJsDate(trip.startDate), 'MMM d')} - {format(toJsDate(trip.endDate), 'MMM d, yyyy')}</p>
                     </div>
                     <div className="text-right">
@@ -203,6 +211,12 @@ export function TripDetail({ id }: TripDetailProps) {
                 participants={participants}
                 open={isReturnModalOpen}
                 onOpenChange={setIsReturnModalOpen}
+            />
+
+            <EditTripModal
+                trip={trip}
+                open={isEditModalOpen}
+                onOpenChange={setIsEditModalOpen}
             />
         </div>
     );

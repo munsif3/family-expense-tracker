@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
@@ -14,10 +14,9 @@ import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import {
     Dialog,
     DialogContent,
-    DialogDescription,
-    DialogFooter,
     DialogHeader,
     DialogTitle,
+    DialogFooter,
 } from '@/components/ui/dialog';
 import {
     Select,
@@ -31,7 +30,9 @@ import { collection, query, where, getDocs } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { UserProfile } from '@/types';
 import { Checkbox } from '@/components/ui/checkbox';
-import { useTrips } from '../hooks/useTrips';
+import { tripService } from '@/lib/api/trips';
+import { Trip } from '../types';
+import { toJsDate } from '@/lib/utils';
 
 const tripSchema = z.object({
     tripName: z.string().min(3, "Trip name is required"),
@@ -47,19 +48,19 @@ const tripSchema = z.object({
 
 type TripFormData = z.infer<typeof tripSchema>;
 
-interface AddTripModalProps {
+interface EditTripModalProps {
+    trip: Trip;
     open: boolean;
     onOpenChange: (open: boolean) => void;
 }
 
-export function AddTripModal({ open, onOpenChange }: AddTripModalProps) {
-    const { createTrip } = useTrips();
+export function EditTripModal({ trip, open, onOpenChange }: EditTripModalProps) {
     const { profile } = useAuth();
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [members, setMembers] = useState<UserProfile[]>([]);
 
     // Fetch household members
-    useState(() => {
+    useEffect(() => {
         const fetchMembers = async () => {
             if (profile?.householdId) {
                 try {
@@ -73,15 +74,33 @@ export function AddTripModal({ open, onOpenChange }: AddTripModalProps) {
             }
         };
         fetchMembers();
-    });
+    }, [profile?.householdId]);
 
     const { register, handleSubmit, formState: { errors }, reset, control, setValue, watch, getValues } = useForm<TripFormData>({
         resolver: zodResolver(tripSchema),
         defaultValues: {
-            tripType: 'international',
-            participantIds: []
+            tripName: trip.tripName,
+            location: trip.location,
+            tripType: trip.tripType,
+            startDate: toJsDate(trip.startDate),
+            endDate: toJsDate(trip.endDate),
+            participantIds: trip.participantIds || []
         }
     });
+
+    // Reset form when trip changes
+    useEffect(() => {
+        if (open) {
+            reset({
+                tripName: trip.tripName,
+                location: trip.location,
+                tripType: trip.tripType,
+                startDate: toJsDate(trip.startDate),
+                endDate: toJsDate(trip.endDate),
+                participantIds: trip.participantIds || []
+            });
+        }
+    }, [trip, open, reset]);
 
     const selectedParticipants = watch('participantIds');
 
@@ -105,20 +124,17 @@ export function AddTripModal({ open, onOpenChange }: AddTripModalProps) {
     const onSubmit = async (data: TripFormData) => {
         setIsSubmitting(true);
         try {
-            await createTrip({
+            await tripService.updateTrip(trip.id, {
                 tripName: data.tripName,
                 location: data.location,
                 tripType: data.tripType,
                 startDate: Timestamp.fromDate(data.startDate),
                 endDate: Timestamp.fromDate(data.endDate),
-                accommodations: [],
-                usedCurrencies: ['USD'], // Default, user can change later
-                participantIds: data.participantIds, // Defaults to creator in hook but we can be explicit
+                participantIds: data.participantIds,
             });
-            reset();
             onOpenChange(false);
         } catch (error) {
-            console.error("Failed to create trip", error);
+            console.error("Failed to update trip", error);
         } finally {
             setIsSubmitting(false);
         }
@@ -128,10 +144,7 @@ export function AddTripModal({ open, onOpenChange }: AddTripModalProps) {
         <Dialog open={open} onOpenChange={onOpenChange}>
             <DialogContent className="sm:max-w-[425px]">
                 <DialogHeader>
-                    <DialogTitle>Create New Trip</DialogTitle>
-                    <DialogDescription>
-                        Add a new trip to track expenses.
-                    </DialogDescription>
+                    <DialogTitle>Edit Trip</DialogTitle>
                 </DialogHeader>
                 <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
                     <div className="space-y-2">
@@ -149,7 +162,7 @@ export function AddTripModal({ open, onOpenChange }: AddTripModalProps) {
                     <div className="space-y-2">
                         <Label htmlFor="tripType">Trip Type</Label>
                         {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-                        <Select onValueChange={(val) => reset(values => ({ ...values, tripType: val as any }))} defaultValue="international">
+                        <Select onValueChange={(val) => setValue('tripType', val as any)} defaultValue={trip.tripType}>
                             <SelectTrigger>
                                 <SelectValue placeholder="Select type" />
                             </SelectTrigger>
@@ -210,14 +223,14 @@ export function AddTripModal({ open, onOpenChange }: AddTripModalProps) {
                                 </div>
                             ))}
                         </div>
-                        <p className="text-xs text-muted-foreground">Select who is going on this trip. The trip will be visible to selected members.</p>
+                        <p className="text-xs text-muted-foreground">The trip will be visible to selected members.</p>
                     </div>
 
                     <DialogFooter>
                         <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
                         <Button type="submit" disabled={isSubmitting}>
                             {isSubmitting && <LoadingSpinner size="sm" className="mr-2" />}
-                            {isSubmitting ? "Creating..." : "Create Trip"}
+                            {isSubmitting ? "Saving..." : "Save Changes"}
                         </Button>
                     </DialogFooter>
                 </form>

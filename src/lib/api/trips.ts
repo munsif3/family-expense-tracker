@@ -14,6 +14,10 @@ export const tripService = {
         return await addDoc(collection(db, COLLECTIONS.TRIPS), tripData);
     },
 
+    async updateTrip(tripId: string, updates: Partial<Trip>) {
+        await updateDoc(doc(db, COLLECTIONS.TRIPS, tripId), updates as any);
+    },
+
     async deleteTrip(tripId: string) {
         await deleteDoc(doc(db, COLLECTIONS.TRIPS, tripId));
     },
