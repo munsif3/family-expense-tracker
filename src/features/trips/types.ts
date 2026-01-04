@@ -54,6 +54,8 @@ export type ExpenseCategory =
   | 'accommodation'
   | 'shopping'
   | 'tips'
+  | 'communication'
+  | 'attractions'
   | 'other';
 
 export interface TripExpense {

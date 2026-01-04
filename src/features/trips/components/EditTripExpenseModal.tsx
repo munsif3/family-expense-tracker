@@ -52,7 +52,7 @@ const expenseSchema = z.object({
     mode: z.string().min(1, "Mode required"),
     paymentMethodId: z.string().optional(),
     paidBy: z.string().min(1, "Payer required"),
-    category: z.enum(['food', 'transport', 'travel', 'accommodation', 'shopping', 'tips', 'other']),
+    category: z.enum(['food', 'transport', 'travel', 'accommodation', 'shopping', 'tips', 'communication', 'attractions', 'other']),
     notes: z.string().optional(),
 });
 
