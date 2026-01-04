@@ -92,10 +92,27 @@ export function useAddTransaction(
                 paymentMethodId: data.paymentMethodId,
             };
 
+            const fullPayload = {
+                ...payload,
+                householdId: profile.householdId,
+                userId: user.uid,
+                isRecurring: !!data.isRecurring,
+                attachments: [] as any[]
+            };
+
             if (transactionToEdit) {
                 await transactionService.updateTransaction(transactionToEdit.id, payload);
+
+                // Update Budget Aggregates: Remove old, Add new
+                const { updateBudgetAggregate } = await import('@/features/budget/budgetAggregations');
+                await updateBudgetAggregate(transactionToEdit, 'remove', profile.householdId);
+                await updateBudgetAggregate(fullPayload as unknown as Transaction, 'add', profile.householdId);
             } else {
                 await transactionService.addTransaction(payload, profile.householdId, user.uid);
+
+                // Update Budget Aggregates: Add new
+                const { updateBudgetAggregate } = await import('@/features/budget/budgetAggregations');
+                await updateBudgetAggregate(fullPayload as unknown as Transaction, 'add', profile.householdId);
 
                 // Handle Recurring creation
                 if (data.isRecurring && data.interval) {

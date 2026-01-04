@@ -1,11 +1,11 @@
 'use client';
 import { useBudget } from '@/features/budget/useBudget';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Progress } from '@/components/ui/progress';
+import { BudgetProgressBar } from '@/components/ui/budget-progress-bar';
 import { Button } from '@/components/ui/button';
-import { Edit2, ChevronDown, ChevronUp } from 'lucide-react';
+import { Edit2, ChevronDown, ChevronUp, AlertCircle } from 'lucide-react';
 import { Input } from '@/components/ui/input';
-import { formatCurrency } from '@/lib/utils';
+import { formatCurrency, cn } from '@/lib/utils';
 import {
     Dialog,
     DialogContent,
@@ -24,6 +24,8 @@ import {
     SelectValue,
 } from "@/components/ui/select"
 import { useState } from 'react';
+import { RecalculateBudgetsButton } from '@/features/budget/components/RecalculateBudgetsButton';
+import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 
 export default function BudgetPage() {
     const {
@@ -46,22 +48,24 @@ export default function BudgetPage() {
 
 
     if (loading) {
-        return <div className="p-8 text-center text-muted-foreground">Loading budgets...</div>;
+        return <div className="p-8 text-center text-muted-foreground"><LoadingSpinner text="Loading budget data..." /></div>;
     }
 
     const currentYear = new Date().getFullYear();
     const years = Array.from({ length: 5 }, (_, i) => currentYear - 2 + i);
 
     return (
-        <div className="max-w-4xl mx-auto space-y-8 pb-20 md:pb-0">
+        <div className="max-w-5xl mx-auto space-y-8 pb-20 md:pb-0">
             <div className="flex flex-col md:flex-row items-center justify-between gap-4">
                 <div>
                     <h1 className="text-3xl font-bold tracking-tight">Budget Planning</h1>
                     <p className="text-muted-foreground mt-1">Manage your spending limits per year</p>
                 </div>
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 flex-wrap justify-end">
+                    <RecalculateBudgetsButton year={selectedYear} />
+
                     <Select value={selectedYear.toString()} onValueChange={(val) => setSelectedYear(parseInt(val))}>
-                        <SelectTrigger className="w-[120px]">
+                        <SelectTrigger className="w-[100px]">
                             <SelectValue placeholder="Year" />
                         </SelectTrigger>
                         <SelectContent>
@@ -73,7 +77,7 @@ export default function BudgetPage() {
 
                     <Button onClick={openEditModal} variant="outline" className="gap-2">
                         <Edit2 className="h-4 w-4" />
-                        Edit {selectedYear} Budget
+                        Edit Budget
                     </Button>
                 </div>
             </div>
@@ -87,7 +91,7 @@ export default function BudgetPage() {
                     <div className="grid gap-6">
                         {budgetStatus.map((item) => (
                             <div key={item.name} className="space-y-1">
-                                <div className="flex items-center justify-between">
+                                <div className="flex items-center justify-between mb-1">
                                     <div className="flex items-center gap-2">
                                         <div className="w-3 h-3 rounded-full" style={{ backgroundColor: item.color }} />
                                         <span className="font-semibold text-sm">{item.name}</span>
@@ -97,7 +101,11 @@ export default function BudgetPage() {
                                         <span className="text-muted-foreground"> / {formatCurrency(item.budgetAnnual, currency)}</span>
                                     </div>
                                 </div>
-                                <Progress value={item.percent} className={`h-2 ${item.percent > 100 ? 'bg-red-100' : ''}`} indicatorColor={item.percent > 100 ? 'bg-red-500' : item.color} />
+                                <BudgetProgressBar
+                                    spent={item.spent}
+                                    limit={item.budgetAnnual}
+                                    currency={currency}
+                                />
                             </div>
                         ))}
                         {budgetStatus.length === 0 && <p className="text-sm text-muted-foreground">No data for this year.</p>}
@@ -111,47 +119,79 @@ export default function BudgetPage() {
                 <div className="grid gap-4">
                     {monthlyStatus.map((month) => {
                         const isExpanded = expandedMonth === month.monthIndex;
-                        const percent = month.budget > 0 ? (month.spent / month.budget) * 100 : 0;
+                        const isRolloverPositive = month.rollover > 0;
+                        const isRolloverNegative = month.rollover < 0;
 
                         return (
-                            <Card key={month.monthIndex} className={`overflow-hidden transition-all ${isExpanded ? 'ring-2 ring-primary/5' : ''}`}>
+                            <Card key={month.monthIndex} className={cn("overflow-hidden transition-all", isExpanded ? 'ring-2 ring-primary/5' : '')}>
                                 <div
-                                    className="p-4 flex items-center justify-between cursor-pointer hover:bg-muted/50"
+                                    className="p-4 cursor-pointer hover:bg-muted/50 transition-colors"
                                     onClick={() => setExpandedMonth(isExpanded ? null : month.monthIndex)}
                                 >
-                                    <div className="flex items-center gap-4 flex-1">
-                                        <div className="font-semibold w-24">{month.monthName}</div>
-                                        <div className="flex-1 max-w-xs hidden sm:block">
-                                            <Progress value={percent} className="h-1.5" />
+                                    <div className="flex items-center justify-between">
+                                        <div className="flex items-center gap-4 flex-1">
+                                            <div className="font-semibold w-24">{month.monthName}</div>
+
+                                            {/* Summary Bar */}
+                                            <div className="flex-1 max-w-sm hidden sm:block">
+                                                <BudgetProgressBar
+                                                    spent={month.spent}
+                                                    limit={month.available} // Use Available (Budget + Rollover)
+                                                    currency={currency}
+                                                    className="h-2"
+                                                />
+                                            </div>
+
+                                            <div className="text-sm text-right min-w-[140px] space-y-0.5">
+                                                <div className={month.spent > month.available ? "text-red-500 font-medium" : ""}>
+                                                    {formatCurrency(month.spent, currency)}
+                                                </div>
+                                                <div className="text-xs text-muted-foreground">
+                                                    of {formatCurrency(month.available, currency)}
+                                                    {isRolloverPositive && <span className="text-green-600 ml-1">(+{formatCurrency(month.rollover, currency)} roll)</span>}
+                                                    {isRolloverNegative && <span className="text-red-600 ml-1">({formatCurrency(month.rollover, currency)} roll)</span>}
+                                                </div>
+                                            </div>
                                         </div>
-                                        <div className="text-sm text-muted-foreground text-right min-w-[120px]">
-                                            <span className={month.spent > month.budget ? "text-red-500 font-medium" : ""}>
-                                                {formatCurrency(month.spent, currency)}
-                                            </span>
-                                            <span className="text-xs ml-1">
-                                                / {formatCurrency(month.budget, currency)}
-                                            </span>
+                                        <div className="ml-4">
+                                            {isExpanded ? <ChevronUp className="h-4 w-4 text-muted-foreground" /> : <ChevronDown className="h-4 w-4 text-muted-foreground" />}
                                         </div>
                                     </div>
-                                    <div className="ml-4">
-                                        {isExpanded ? <ChevronUp className="h-4 w-4 text-muted-foreground" /> : <ChevronDown className="h-4 w-4 text-muted-foreground" />}
+
+                                    {/* Mobile Progress Bar shown below on small screens */}
+                                    <div className="mt-2 sm:hidden">
+                                        <BudgetProgressBar
+                                            spent={month.spent}
+                                            limit={month.available}
+                                            currency={currency}
+                                        />
                                     </div>
                                 </div>
 
                                 {isExpanded && (
-                                    <div className="px-4 pb-4 pt-0 border-t bg-muted/20">
-                                        <div className="mt-4 grid gap-3">
+                                    <div className="px-4 pb-4 pt-0 border-t bg-muted/10">
+                                        <div className="py-2 text-xs text-muted-foreground flex items-center justify-end gap-2">
+                                            <span>Base Budget: {formatCurrency(month.budget, currency)}</span>
+                                            <span>+</span>
+                                            <span className={isRolloverNegative ? 'text-red-500' : 'text-green-600'}>Rollover: {formatCurrency(month.rollover, currency)}</span>
+                                            <span>=</span>
+                                            <span className="font-medium text-foreground">Limit: {formatCurrency(month.available, currency)}</span>
+                                        </div>
+
+                                        <div className="mt-2 grid gap-3">
                                             {month.items.map(item => (
                                                 <div key={item.name} className="flex items-center justify-between text-sm">
                                                     <div className="flex items-center gap-2">
                                                         <div className="w-2 h-2 rounded-full" style={{ backgroundColor: item.color }} />
                                                         <span>{item.name}</span>
                                                     </div>
-                                                    <div className="flex items-center gap-4">
-                                                        <div className="w-24 h-1.5 bg-secondary rounded-full overflow-hidden hidden sm:block">
-                                                            <div
-                                                                className="h-full rounded-full"
-                                                                style={{ width: `${Math.min(item.percent, 100)}%`, backgroundColor: item.percent > 100 ? 'red' : item.color }}
+                                                    <div className="flex items-center gap-4 flex-1 justify-end max-w-md">
+                                                        <div className="w-full max-w-[140px] hidden sm:block">
+                                                            <BudgetProgressBar
+                                                                spent={item.spent}
+                                                                limit={item.budgetAnnual}
+                                                                currency={currency}
+                                                                className="h-1.5"
                                                             />
                                                         </div>
                                                         <span className="text-xs tabular-nums text-right w-[100px]">

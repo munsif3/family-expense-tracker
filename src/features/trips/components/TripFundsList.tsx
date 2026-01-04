@@ -13,12 +13,13 @@ import { useAuth } from '@/features/auth/AuthContext';
 interface TripFundsListProps {
     funds: TripFund[];
     participants: UserProfile[];
+    householdCurrency: string;
     onAdd: () => void;
 }
 
-export function TripFundsList({ funds, participants, onAdd }: TripFundsListProps) {
+export function TripFundsList({ funds, participants, householdCurrency, onAdd }: TripFundsListProps) {
     const { household } = useAuth();
-    const householdCurrency = household?.currency || 'Base';
+    // const householdCurrency = household?.currency || 'Base';
 
     const getName = (uid: string) => {
         return participants.find(p => p.uid === uid)?.displayName || uid;
@@ -86,7 +87,7 @@ export function TripFundsList({ funds, participants, onAdd }: TripFundsListProps
                                 </div>
                                 <div className="text-right">
                                     <p className="font-bold">{formatCurrency(fund.amount, fund.currency)}</p>
-                                    <p className="text-xs text-muted-foreground">Base: {formatCurrency(fund.baseAmount)}</p>
+                                    <p className="text-xs text-muted-foreground">{householdCurrency}: {formatCurrency(fund.baseAmount, householdCurrency)}</p>
                                 </div>
                             </div>
 
@@ -178,7 +179,7 @@ export function TripFundsList({ funds, participants, onAdd }: TripFundsListProps
                                         )}
                                     </TableCell>
                                     <TableCell className="font-medium">
-                                        {formatCurrency(fund.baseAmount)}
+                                        {formatCurrency(fund.baseAmount, householdCurrency)}
                                     </TableCell>
                                     <TableCell>
                                         <Button variant="ghost" size="icon" className="h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity" onClick={() => setEditingFund(fund)}>

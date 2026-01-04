@@ -1,5 +1,5 @@
 'use client';
-
+import { useAuth } from '@/features/auth/AuthContext';
 import { useState } from 'react';
 import { Transaction } from '@/types';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -40,10 +40,17 @@ export function TransactionList({ transactions, loading, compact }: TransactionL
         )
     }
 
+    const { profile } = useAuth(); // Needed for householdId
+
     const handleDelete = async () => {
-        if (!deletingTx) return;
+        if (!deletingTx || !profile?.householdId) return;
         try {
             await deleteDoc(doc(db, 'transactions', deletingTx.id));
+
+            // Update Budget Aggregates
+            const { updateBudgetAggregate } = await import('@/features/budget/budgetAggregations');
+            await updateBudgetAggregate(deletingTx, 'remove', profile.householdId);
+
             setDeletingTx(null);
         } catch (error) {
             console.error("Error deleting transaction", error);

@@ -2,31 +2,13 @@ import { useState, useEffect, useMemo } from 'react';
 import { useAuth } from '@/features/auth/AuthContext';
 import { collection, query, where, doc, setDoc, onSnapshot } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
-import { createSecureQuery } from '@/lib/firestoreUtils';
-import { calculateAnnualStatus, calculateMonthlyStatus } from '@/features/budget/budgetUtils';
-import { Transaction, Category } from '@/types';
+import { calculateAnnualStatus, calculateMonthlyStatus, MonthlyBudgetAggregate } from '@/features/budget/budgetUtils';
+import { Category } from '@/types';
 import { budgetService } from '@/lib/api/budgets';
-
-export interface BudgetStatusItem {
-    name: string;
-    id: string | undefined;
-    spent: number;
-    budgetAnnual: number;
-    percent: number;
-    color: string;
-}
-
-export interface MonthlyStatusItem {
-    monthIndex: number; // 0-11
-    monthName: string;
-    spent: number;
-    budget: number;
-    items: BudgetStatusItem[];
-}
 
 export function useBudget() {
     const { profile, household } = useAuth();
-    const [transactions, setTransactions] = useState<Transaction[]>([]);
+    const [aggregates, setAggregates] = useState<MonthlyBudgetAggregate[]>([]);
     const [categories, setCategories] = useState<Category[]>([]);
     const [loading, setLoading] = useState(true);
     const [editMode, setEditMode] = useState(false);
@@ -35,33 +17,29 @@ export function useBudget() {
 
     const currency = household?.currency || 'USD';
 
-    // Fetch Transactions
+    // Fetch Aggregates (replacing Transactions)
     useEffect(() => {
         if (!profile?.householdId) return;
 
-        // Optimization: In a real app with many years of data, we would filter by date range in Firestore.
-        // For now, fetching all expense transactions and filtering in memory is acceptable for small/medium usage.
-        const q = createSecureQuery({
-            collectionName: 'transactions',
-            householdId: profile.householdId,
-            userId: profile.uid,
-            constraints: [where('type', '==', 'expense')]
-        });
+        // Fetch selected year aggregates
+        const q = query(
+            collection(db, 'monthly_budgets'),
+            where('householdId', '==', profile.householdId),
+            where('year', '==', selectedYear)
+        );
 
         const unsubscribe = onSnapshot(q, (snapshot) => {
-            const data = snapshot.docs.map(doc => {
-                const d = doc.data();
-                return {
-                    id: doc.id,
-                    ...d,
-                    // Ensure date is a proper wrapper if needed, but Firestore SDK usually handles Timestamp to JS Date via toDate()
-                    // However, we receive Timestamp objects here.
-                };
-            }) as Transaction[];
-            setTransactions(data);
+            const data = snapshot.docs.map(doc => ({
+                ...doc.data(),
+            })) as MonthlyBudgetAggregate[];
+            setAggregates(data);
+            setLoading(false);
+        }, (error) => {
+            console.error("useBudget snapshot error:", error);
+            setLoading(false);
         });
         return () => unsubscribe();
-    }, [profile?.householdId, profile?.uid]);
+    }, [profile?.householdId, selectedYear]);
 
     // Fetch Categories & Seed if Empty
     useEffect(() => {
@@ -100,7 +78,9 @@ export function useBudget() {
                     ...doc.data()
                 })) as Category[];
                 setCategories(data);
-                setLoading(false);
+                // Don't disable loading here strictly, wait for aggregates too? 
+                // But aggregates might be empty.
+                // We'll manage loading state better combined or just use logic below.
             }
         });
         return () => unsubscribe();
@@ -108,11 +88,14 @@ export function useBudget() {
 
     // Calculate Status
     const { budgetStatus, monthlyStatus } = useMemo(() => {
+        // If loading categories, return empty
+        if (categories.length === 0) return { budgetStatus: [], monthlyStatus: [] };
+
         return {
-            budgetStatus: calculateAnnualStatus(transactions, categories, selectedYear),
-            monthlyStatus: calculateMonthlyStatus(transactions, categories, selectedYear)
+            budgetStatus: calculateAnnualStatus(aggregates, categories, selectedYear),
+            monthlyStatus: calculateMonthlyStatus(aggregates, categories, selectedYear)
         };
-    }, [transactions, categories, selectedYear]);
+    }, [aggregates, categories, selectedYear]);
 
     const handleSaveBudgets = async (): Promise<boolean> => {
         if (!profile?.uid) return false;
@@ -162,6 +145,7 @@ export function useBudget() {
         openEditModal,
         handleSaveBudgets,
         selectedYear,
-        setSelectedYear
+        setSelectedYear,
+        aggregates // Export in case needed
     };
 }

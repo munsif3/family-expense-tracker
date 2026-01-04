@@ -28,6 +28,20 @@
                 },
                 {
                     "fieldPath": "date",
+                    "order": "ASCENDING"
+                }
+            ]
+        },
+        {
+            "collectionGroup": "transactions",
+            "queryScope": "COLLECTION",
+            "fields": [
+                {
+                    "fieldPath": "householdId",
+                    "order": "ASCENDING"
+                },
+                {
+                    "fieldPath": "date",
                     "order": "DESCENDING"
                 }
             ]

@@ -13,10 +13,11 @@ interface TripExpensesListProps {
     tripName: string;
     expenses: TripExpense[];
     participants: UserProfile[];
+    householdCurrency: string;
     onAdd: () => void;
 }
 
-export function TripExpensesList({ tripId, tripName, expenses, participants, onAdd }: TripExpensesListProps) {
+export function TripExpensesList({ tripId, tripName, expenses, participants, householdCurrency, onAdd }: TripExpensesListProps) {
     const [sortConfig, setSortConfig] = useState<{ key: string; direction: 'asc' | 'desc' } | null>({ key: 'date', direction: 'desc' });
     const [editingExpense, setEditingExpense] = useState<TripExpense | null>(null);
 
@@ -104,7 +105,7 @@ export function TripExpensesList({ tripId, tripName, expenses, participants, onA
                                     </div>
                                     <div className="text-right">
                                         <p className="font-bold">{formatCurrency(expense.amount, expense.currency)}</p>
-                                        <p className="text-xs text-muted-foreground">Base: {formatCurrency(expense.baseAmount)}</p>
+                                        <p className="text-xs text-muted-foreground">{householdCurrency}: {formatCurrency(expense.baseAmount, householdCurrency)}</p>
                                     </div>
                                 </div>
                                 <div className="flex items-center justify-end gap-2 border-t pt-2 mt-1">
@@ -175,7 +176,7 @@ export function TripExpensesList({ tripId, tripName, expenses, participants, onA
                                     <TableCell className="max-w-[200px] truncate">{expense.notes}</TableCell>
                                     <TableCell>{getName(expense.paidBy)}</TableCell>
                                     <TableCell>{formatCurrency(expense.amount, expense.currency)}</TableCell>
-                                    <TableCell className="font-medium">{formatCurrency(expense.baseAmount)}</TableCell>
+                                    <TableCell className="font-medium">{formatCurrency(expense.baseAmount, householdCurrency)}</TableCell>
                                     <TableCell>
                                         <Button variant="ghost" size="icon" onClick={() => setEditingExpense(expense)}>
                                             <Pencil className="h-4 w-4" />

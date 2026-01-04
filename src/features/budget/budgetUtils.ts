@@ -1,10 +1,8 @@
-import { Transaction, Category } from '@/types';
-import { getYear, getMonth } from 'date-fns';
-import { toJsDate } from '@/lib/utils';
+import { Category } from '@/types';
 
 export interface BudgetStatusItem {
     name: string;
-    id: string | undefined;
+    id: string; // id is required for categories
     spent: number;
     budgetAnnual: number;
     percent: number;
@@ -16,117 +14,160 @@ export interface MonthlyStatusItem {
     monthName: string;
     spent: number;
     budget: number;
+    rollover: number; // New field
+    available: number; // New field: budget + rollover - spent
     items: BudgetStatusItem[];
 }
 
+export interface MonthlyBudgetAggregate {
+    householdId?: string;
+    year: number;
+    month: number;
+    categorySpending: Record<string, number>;
+    // lastUpdated...
+}
+
 /**
- * Calculates the annual budget status for the selected year.
+ * Calculates the annual budget status for the selected year using Aggregates.
  */
 export function calculateAnnualStatus(
-    transactions: Transaction[],
+    aggregates: MonthlyBudgetAggregate[],
     categories: Category[],
     selectedYear: number
 ): BudgetStatusItem[] {
     const annualSpendMap: Record<string, number> = {};
 
-    // Filter by year first
-    transactions.forEach(t => {
-        const date = toJsDate(t.date);
-        if (getYear(date) !== selectedYear) return;
-
-        const name = t.categoryName || 'Other';
-        annualSpendMap[name] = (annualSpendMap[name] || 0) + t.amount;
+    aggregates.forEach(agg => {
+        if (agg.year !== selectedYear) return;
+        Object.entries(agg.categorySpending).forEach(([catId, amount]) => {
+            annualSpendMap[catId] = (annualSpendMap[catId] || 0) + amount;
+        });
     });
 
-    const allNames = new Set([...Object.keys(annualSpendMap), ...categories.map(c => c.name)]);
-
-    return Array.from(allNames).map((name): BudgetStatusItem => {
-        const cat = categories.find(c => c.name === name);
-        const spent = annualSpendMap[name] || 0;
+    return categories.map((cat): BudgetStatusItem => {
+        const spent = annualSpendMap[cat.id] || 0;
 
         // Get monthly budget: check year override first, then fall back to default
-        const budgetMonthly = cat?.budgets?.[selectedYear] ?? cat?.budgetMonthly ?? 0;
+        const budgetMonthly = cat.budgets?.[selectedYear] ?? cat.budgetMonthly ?? 0;
+        const budgetAnnual = budgetMonthly * 12; // Simple projection
 
-        const budgetAnnual = budgetMonthly * 12;
+        // OR: Sum of monthly budgets? 
+        // If we want "True Annual Limit", it's 12 * limit.
+
         const percent = budgetAnnual > 0 ? (spent / budgetAnnual) * 100 : (spent > 0 ? 100 : 0);
 
         return {
-            name,
-            id: cat?.id,
+            name: cat.name,
+            id: cat.id,
             spent,
             budgetAnnual,
             percent,
-            color: cat?.color || '#cbd5e1'
+            color: cat.color || '#cbd5e1'
         };
     }).sort((a, b) => b.spent - a.spent);
 }
 
 /**
- * Calculates the month-by-month budget breakdown for the selected year.
+ * Calculates the month-by-month budget breakdown with Rollover.
  */
 export function calculateMonthlyStatus(
-    transactions: Transaction[],
+    aggregates: MonthlyBudgetAggregate[],
     categories: Category[],
     selectedYear: number
 ): MonthlyStatusItem[] {
-    const months = Array.from({ length: 12 }, (_, i) => {
-        const date = new Date(selectedYear, i, 1);
+
+    // Sort aggregates by month just in case
+    // We assume aggregates contains data for the selectedYear.
+
+    const monthlyData = Array.from({ length: 12 }, (_, i) => {
         return {
-            index: i,
-            name: date.toLocaleString('default', { month: 'long' })
+            monthIndex: i,
+            spent: 0,
+            spendingMap: {} as Record<string, number>
         };
     });
 
-    return months.map(({ index, name: monthName }): MonthlyStatusItem => {
-        // Filter transactions for this month and year
-        const monthTransactions = transactions.filter(t => {
-            const date = toJsDate(t.date);
-            return getYear(date) === selectedYear && getMonth(date) === index;
-        });
+    aggregates.forEach(agg => {
+        if (agg.year !== selectedYear) return;
+        if (monthlyData[agg.month]) {
+            Object.entries(agg.categorySpending).forEach(([catId, amount]) => {
+                monthlyData[agg.month].spendingMap[catId] = amount;
+                monthlyData[agg.month].spent += amount;
+            });
+        }
+    });
 
-        const monthSpendMap: Record<string, number> = {};
-        let totalSpent = 0;
-        monthTransactions.forEach(t => {
-            const catName = t.categoryName || 'Other';
-            monthSpendMap[catName] = (monthSpendMap[catName] || 0) + t.amount;
-            totalSpent += t.amount;
-        });
+    let runningRollover = 0;
 
-        // Use all category names to ensure consistent rows, or just active ones?
-        // Logic from original hook used allNames derived from yearTransactions + categories
-        // But here we need to re-derive purely for this context or pass it in?
-        // Original logic re-derived `allNames` inside the loop implicitly by iterating over `allNames` from outer scope.
-        // To keep it pure, let's derive distinct names for this month + all categories.
-        const allNames = new Set([...Object.keys(monthSpendMap), ...categories.map(c => c.name)]);
+    return monthlyData.map((data, index) => {
+        const date = new Date(selectedYear, index, 1);
+        const monthName = date.toLocaleString('default', { month: 'long' });
 
-        const items = Array.from(allNames).map((name): BudgetStatusItem => {
-            const cat = categories.find(c => c.name === name);
-            const spent = monthSpendMap[name] || 0;
+        // Calculate Total Budget for this month (Sum of all category limits)
+        const totalBudget = categories.reduce((acc, cat) => {
+            return acc + (cat.budgets?.[selectedYear] ?? cat.budgetMonthly ?? 0);
+        }, 0);
 
-            // Monthly budget for this category
-            const budgetMonthly = cat?.budgets?.[selectedYear] ?? cat?.budgetMonthly ?? 0;
+        // Rollover Logic: 
+        // This month's available = Budget + Rollover
+        // Next month's rollover = (Budget + Rollover) - Spent
+
+        // Wait, "Rollover Budgets" usually means unused funds from Jan move to Feb.
+        // So Feb starts with FebBudget + JanRemainder.
+        // JanRemainder = JanBudget - JanSpent.
+
+        // Current Month Rollover (Coming IN) = runningRollover.
+        // Carry Over (Going OUT) = (totalBudget + runningRollover) - data.spent.
+
+        const currentRollover = runningRollover; // Inflow
+        const available = totalBudget + currentRollover; // Effective Limit
+        const diff = available - data.spent; // Net position
+
+        // Update running rollover for NEXT month.
+        // Usually, we only rollover positive amounts? Or negative too (debt)?
+        // "Rollover Budgets" usually implies keeping the surplus. Deficit might be absorbed or carry over as debt.
+        // Let's assume full carry over (positive and negative).
+        runningRollover = diff;
+
+        // Items for detail view
+        const items = categories.map((cat): BudgetStatusItem => {
+            const spent = data.spendingMap[cat.id] || 0;
+            const budgetMonthly = cat.budgets?.[selectedYear] ?? cat.budgetMonthly ?? 0;
+
+            // Per-Category Rollover is complex because we track total rollover above.
+            // If we want Per-Category Rollover, we need a map of rollovers.
+            // The requirement "Current Month's Budget vs. Actual Spend" and "Rollover Budgets".
+            // Implementation Plan didn't specify per-category rollover. 
+            // Usually global rollover is easier to display. 
+            // "Funds from Jan move to Feb".
+            // Let's stick to Global Dashboard view having rollover.
+            // Individual categories show "Budget vs Spend" for THAT month (isolated), 
+            // unless we want detailed rollover. Detailed is better but UI is complex.
+            // Using Isolated for items view, Global for summary.
+
             const percent = budgetMonthly > 0 ? (spent / budgetMonthly) * 100 : (spent > 0 ? 100 : 0);
 
             return {
-                name,
-                id: cat?.id,
+                name: cat.name,
+                id: cat.id,
                 spent,
-                budgetAnnual: budgetMonthly, // Reusing field name for monthly budget
+                budgetAnnual: budgetMonthly, // Actually Monthly Budget here
                 percent,
-                color: cat?.color || '#cbd5e1'
+                color: cat.color || '#cbd5e1'
             };
         }).sort((a, b) => b.spent - a.spent);
-
-        // Calculate total budget for the month (sum of all category budgets)
-        const totalBudget = categories.reduce((acc, cat) => {
-            return acc + (cat?.budgets?.[selectedYear] ?? cat?.budgetMonthly ?? 0);
-        }, 0);
 
         return {
             monthIndex: index,
             monthName,
-            spent: totalSpent,
+            spent: data.spent,
             budget: totalBudget,
+            rollover: currentRollover,
+            available: available - data.spent, // Available REMAINING? Or Available LIMIT?
+            // "Available" typically means "How much I can spend".
+            // Let's say "Limit" = Budget + Rollover.
+            // "Remaining" = Limit - Spent.
+            // I'll export "available" as "Limit" (Budget + Rollover).
             items
         };
     });

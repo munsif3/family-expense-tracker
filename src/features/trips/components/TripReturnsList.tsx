@@ -9,10 +9,11 @@ import { Plus } from "lucide-react";
 interface TripReturnsListProps {
     returns: TripReturn[];
     participants: UserProfile[];
+    householdCurrency: string;
     onAdd: () => void;
 }
 
-export function TripReturnsList({ returns, participants, onAdd }: TripReturnsListProps) {
+export function TripReturnsList({ returns, participants, householdCurrency, onAdd }: TripReturnsListProps) {
     if (returns.length === 0) {
         return (
             <div className="text-center py-8 border rounded-lg bg-muted/20">
@@ -48,7 +49,7 @@ export function TripReturnsList({ returns, participants, onAdd }: TripReturnsLis
                             <div className="text-right">
                                 <p className="font-bold">{formatCurrency(ret.amount, ret.currency)}</p>
                                 {ret.conversionRate !== 1 && (
-                                    <p className="text-xs text-muted-foreground">Base: {formatCurrency(ret.baseAmount)}</p>
+                                    <p className="text-xs text-muted-foreground">{householdCurrency}: {formatCurrency(ret.baseAmount, householdCurrency)}</p>
                                 )}
                             </div>
                         </div>
@@ -77,7 +78,7 @@ export function TripReturnsList({ returns, participants, onAdd }: TripReturnsLis
                                     {formatCurrency(ret.amount, ret.currency)}
                                     {ret.conversionRate !== 1 && (
                                         <div className="text-xs text-muted-foreground">
-                                            (Base: {formatCurrency(ret.baseAmount)})
+                                            ({householdCurrency}: {formatCurrency(ret.baseAmount, householdCurrency)})
                                         </div>
                                     )}
                                 </TableCell>
