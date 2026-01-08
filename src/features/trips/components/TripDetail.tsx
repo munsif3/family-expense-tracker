@@ -18,9 +18,14 @@ import { useAuth } from '@/features/auth/AuthContext';
 import { AddTripFundModal } from './AddTripFundModal';
 import { AddTripExpenseModal } from './AddTripExpenseModal';
 import { AddTripReturnModal } from './AddTripReturnModal';
+import { AddTripBudgetModal } from './AddTripBudgetModal';
+import { EditTripBudgetModal } from './EditTripBudgetModal';
+import { ManageBudgetRatesModal } from './ManageBudgetRatesModal';
 import { TripFundsList } from './TripFundsList';
 import { TripExpensesList } from './TripExpensesList';
 import { TripReturnsList } from './TripReturnsList';
+import { TripBudgetList } from './TripBudgetList';
+import { TripBudget } from '../types';
 import { TripAnalytics } from './TripAnalytics';
 import { TripCurrencyWallet } from './TripCurrencyWallet';
 import { EditTripModal } from './EditTripModal';
@@ -54,7 +59,18 @@ export function TripDetail({ id }: TripDetailProps) {
     const [isFundModalOpen, setIsFundModalOpen] = useState(false);
     const [isExpenseModalOpen, setIsExpenseModalOpen] = useState(false);
     const [isReturnModalOpen, setIsReturnModalOpen] = useState(false);
+    const [isBudgetModalOpen, setIsBudgetModalOpen] = useState(false);
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+    const [isRateModalOpen, setIsRateModalOpen] = useState(false);
+
+    // Budget Editing State
+    const [editingBudget, setEditingBudget] = useState<TripBudget | null>(null);
+    const [isEditBudgetModalOpen, setIsEditBudgetModalOpen] = useState(false);
+
+    const handleEditBudget = (budget: TripBudget) => {
+        setEditingBudget(budget);
+        setIsEditBudgetModalOpen(true);
+    };
 
     if (tripLoading || fundsLoading || expensesLoading || returnsLoading || participantsLoading) {
         return <LoadingSpinner fullScreen />;
@@ -119,6 +135,7 @@ export function TripDetail({ id }: TripDetailProps) {
                     <TabsTrigger value="funds">Funds</TabsTrigger>
                     <TabsTrigger value="wallet">Wallet</TabsTrigger>
                     <TabsTrigger value="expenses">Expenses</TabsTrigger>
+                    <TabsTrigger value="budget">Budget</TabsTrigger>
                     <TabsTrigger value="returns">Returns</TabsTrigger>
                     <TabsTrigger value="analytics">Analytics</TabsTrigger>
                 </TabsList>
@@ -178,6 +195,16 @@ export function TripDetail({ id }: TripDetailProps) {
                     </div>
                     <TripExpensesList tripId={id} tripName={trip.tripName} expenses={expenses} participants={participants} householdCurrency={householdCurrency} onAdd={() => setIsExpenseModalOpen(true)} />
                 </TabsContent>
+                <TabsContent value="budget" className="space-y-4">
+                    <div className="flex justify-between items-center">
+                        <h3 className="text-lg font-medium">Tentative Budget</h3>
+                        <div className="flex gap-2">
+                            <Button variant="outline" size="sm" onClick={() => setIsRateModalOpen(true)}>Manage Rates</Button>
+                            <Button size="sm" onClick={() => setIsBudgetModalOpen(true)}><Plus className="h-4 w-4 mr-2" />Add Item</Button>
+                        </div>
+                    </div>
+                    <TripBudgetList trip={trip} onUpdate={() => { }} onEdit={handleEditBudget} />
+                </TabsContent>
                 <TabsContent value="returns" className="space-y-4">
                     <div className="flex justify-between items-center">
                         <h3 className="text-lg font-medium">Returns / Refunds</h3>
@@ -186,7 +213,7 @@ export function TripDetail({ id }: TripDetailProps) {
                     <TripReturnsList returns={returns} participants={participants} householdCurrency={householdCurrency} onAdd={() => setIsReturnModalOpen(true)} />
                 </TabsContent>
                 <TabsContent value="analytics" className="space-y-4">
-                    <TripAnalytics funds={funds} expenses={expenses} returns={returns} participants={participants} />
+                    <TripAnalytics funds={funds} expenses={expenses} returns={returns} participants={participants} budgetItems={trip.budgets || []} householdCurrency={householdCurrency} budgetRates={trip.budgetRates} />
                 </TabsContent>
             </Tabs>
 
@@ -211,6 +238,25 @@ export function TripDetail({ id }: TripDetailProps) {
                 participants={participants}
                 open={isReturnModalOpen}
                 onOpenChange={setIsReturnModalOpen}
+            />
+
+            <ManageBudgetRatesModal
+                trip={trip}
+                open={isRateModalOpen}
+                onOpenChange={setIsRateModalOpen}
+            />
+
+            <AddTripBudgetModal
+                trip={trip}
+                open={isBudgetModalOpen}
+                onOpenChange={setIsBudgetModalOpen}
+            />
+
+            <EditTripBudgetModal
+                trip={trip}
+                budget={editingBudget}
+                open={isEditBudgetModalOpen}
+                onOpenChange={setIsEditBudgetModalOpen}
             />
 
             <EditTripModal

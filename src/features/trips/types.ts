@@ -20,8 +20,18 @@ export interface Trip {
   accommodations: TripAccommodation[];
   usedCurrencies: string[]; // e.g. ['USD', 'EUR']
   participantIds: string[]; // references to users collection
+  budgets?: TripBudget[]; // Tentative budget entries
+  budgetRates?: Record<string, number>; // e.g. "USD-AED": 3.67
   createdBy: string;
   createdAt: Timestamp;
+}
+
+export interface TripBudget {
+  id: string;
+  amount: number;
+  currency: string;
+  description?: string;
+  category?: ExpenseCategory;
 }
 
 export type PaymentMode = 'card' | 'usd_cash' | 'eur_cash' | 'aed_cash' | 'other' | (string & {});
